@@ -1,0 +1,62 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        serif: ['Instrument Serif', 'Georgia', 'serif'],
+      },
+      colors: {
+        grow: {
+          bg: '#0a0a0f',
+          surface: '#12121a',
+          card: '#161622',
+          border: '#1e1e2a',
+          'border-hover': '#2a2a3a',
+          accent: '#3b82f6',
+          'accent-hover': '#2563eb',
+          text: '#e5e5e5',
+          'text-secondary': '#7a7a8a',
+          'text-muted': '#4a4a5a',
+          success: '#22c55e',
+          warning: '#f59e0b',
+          error: '#ef4444',
+        }
+      },
+      keyframes: {
+        'fade-in-up': {
+          '0%': { opacity: '0', transform: 'translateY(8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'progress-fill': {
+          '0%': { width: '0%' },
+          '100%': { width: 'var(--progress-width)' },
+        },
+        'slide-in-right': {
+          '0%': { opacity: '0', transform: 'translateX(100%)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+        'slide-out-right': {
+          '0%': { opacity: '1', transform: 'translateX(0)' },
+          '100%': { opacity: '0', transform: 'translateX(100%)' },
+        },
+        'modal-in': {
+          '0%': { opacity: '0', transform: 'scale(0.95) translateY(10px)' },
+          '100%': { opacity: '1', transform: 'scale(1) translateY(0)' },
+        },
+      },
+      animation: {
+        'fade-in-up': 'fade-in-up 0.4s ease-out forwards',
+        'progress-fill': 'progress-fill 1s ease-out forwards',
+        'slide-in-right': 'slide-in-right 0.3s ease-out forwards',
+        'slide-out-right': 'slide-out-right 0.3s ease-in forwards',
+        'modal-in': 'modal-in 0.2s ease-out forwards',
+      },
+    },
+  },
+  plugins: [],
+}
