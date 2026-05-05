@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { X } from 'lucide-react';
 
 interface NewCampaignModalProps {
@@ -26,7 +26,7 @@ export default function NewCampaignModal({ isOpen, onClose, onCreate }: NewCampa
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!niche.trim() || !city.trim()) return;
     onCreate({ niche: niche.trim(), city: city.trim(), totalLeads, emailTemplate });

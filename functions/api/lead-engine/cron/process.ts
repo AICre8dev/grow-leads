@@ -6,6 +6,18 @@ import { sendEmail, renderOutreachEmail } from '../../../_shared/email';
 
 const BATCH_SIZE = 3; // leads processed per invocation per status
 
+interface LeadWithCampaign {
+  id: string;
+  campaign_id: string;
+  business_name: string;
+  email: string;
+  site_url: string;
+  lead_campaigns?: {
+    email_template?: string | null;
+    niche?: string | null;
+  } | null;
+}
+
 // POST /api/lead-engine/cron/process
 // Header: x-cron-secret: <CRON_SECRET>
 // Call this every 2 min from GitHub Actions, cron-job.org, or a separate CF Worker.
@@ -16,7 +28,13 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
   const secret = request.headers.get('x-cron-secret');
   if (secret !== env.CRON_SECRET) return error('Unauthorized', 401);
 
-  const supabase = getSupabase(env);
+  let supabase: ReturnType<typeof getSupabase>;
+
+  try {
+    supabase = getSupabase(env);
+  } catch (e) {
+    return error((e as Error).message, 500);
+  }
   const summary = {
     scrapesChecked: 0,
     leadsInserted: 0,
@@ -39,6 +57,15 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
     summary.scrapesChecked++;
     try {
       const run = await getRun(env.APIFY_TOKEN, runId);
+      if (run.status === 'FAILED' || run.status === 'ABORTED' || run.status === 'TIMED-OUT') {
+        await supabase
+          .from('lead_campaigns')
+          .update({ status: 'failed', stats: { ...stats, apifyStatus: run.status } })
+          .eq('id', campaign.id);
+        summary.errors.push(`campaign ${campaign.id}: Apify run ${run.status}`);
+        continue;
+      }
+
       if (run.status !== 'SUCCEEDED') continue; // still running, check next cron
 
       const places = await getDataset(env.APIFY_TOKEN, run.defaultDatasetId);
@@ -115,6 +142,7 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
         })
         .eq('id', lead.id);
 
+      await incrementCampaignStat(supabase, lead.campaign_id, 'sitesBuilt');
       summary.sitesBuilt++;
     } catch (e) {
       await supabase
@@ -137,15 +165,16 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
 
   for (const lead of needEmail || []) {
     try {
-      const template = (lead as any).lead_campaigns?.email_template || '';
+      const leadWithCampaign = lead as LeadWithCampaign;
+      const template = leadWithCampaign.lead_campaigns?.email_template || '';
       const { subject, html } = renderOutreachEmail({
-        businessName: lead.business_name,
-        siteUrl: lead.site_url,
+        businessName: leadWithCampaign.business_name,
+        siteUrl: leadWithCampaign.site_url,
         template,
       });
 
       await sendEmail(env.RESEND_API_KEY, {
-        to: lead.email,
+        to: leadWithCampaign.email,
         from: env.EMAIL_FROM,
         subject,
         html,
@@ -154,8 +183,9 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
       await supabase
         .from('lead_engine_leads')
         .update({ status: 'email_sent', email_sent_at: new Date().toISOString() })
-        .eq('id', lead.id);
+        .eq('id', leadWithCampaign.id);
 
+      await incrementCampaignStat(supabase, leadWithCampaign.campaign_id, 'emailsSent');
       summary.emailsSent++;
     } catch (e) {
       summary.errors.push(`lead ${lead.id} email: ${(e as Error).message}`);
@@ -165,20 +195,45 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
   // 4. Mark campaigns complete when all leads are in final state
   const { data: maybeComplete } = await supabase
     .from('lead_campaigns')
-    .select('id, lead_count')
+    .select('id, lead_count, stats')
     .eq('status', 'running');
 
   for (const camp of maybeComplete || []) {
-    const { count: pendingCount } = await supabase
-      .from('lead_engine_leads')
-      .select('id', { count: 'exact', head: true })
-      .eq('campaign_id', camp.id)
-      .not('status', 'in', '(email_sent,failed)');
+    if (!camp.stats?.scraped) continue;
 
-    if ((pendingCount || 0) === 0) {
+    const { data: leads } = await supabase
+      .from('lead_engine_leads')
+      .select('status, site_url, email')
+      .eq('campaign_id', camp.id);
+
+    const hasUnfinishedLead = (leads || []).some((lead) => {
+      if (lead.status === 'email_sent' || lead.status === 'failed') return false;
+      if (lead.status === 'added_to_crm' && lead.site_url && !lead.email) return false;
+      return true;
+    });
+
+    if (!hasUnfinishedLead) {
       await supabase.from('lead_campaigns').update({ status: 'complete' }).eq('id', camp.id);
     }
   }
 
   return json(summary);
 };
+
+async function incrementCampaignStat(
+  supabase: ReturnType<typeof getSupabase>,
+  campaignId: string,
+  key: 'sitesBuilt' | 'emailsSent',
+) {
+  const { data: campaign } = await supabase
+    .from('lead_campaigns')
+    .select('stats')
+    .eq('id', campaignId)
+    .single();
+
+  const stats = campaign?.stats || {};
+  await supabase
+    .from('lead_campaigns')
+    .update({ stats: { ...stats, [key]: (stats[key] || 0) + 1 } })
+    .eq('id', campaignId);
+}

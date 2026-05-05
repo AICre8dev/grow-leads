@@ -1,4 +1,3 @@
-import React from 'react';
 import Toast from './Toast';
 import { Toast as ToastType } from '../types';
 

@@ -7,7 +7,13 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
   if (request.method !== 'GET') return error('Method not allowed', 405);
 
   const id = params.id as string;
-  const supabase = getSupabase(env);
+  let supabase: ReturnType<typeof getSupabase>;
+
+  try {
+    supabase = getSupabase(env);
+  } catch (e) {
+    return error((e as Error).message, 500);
+  }
 
   const { data: campaign, error: campErr } = await supabase
     .from('lead_campaigns')

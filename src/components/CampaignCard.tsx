@@ -1,4 +1,3 @@
-import React from 'react';
 import { Campaign } from '../types';
 import ProgressBar from './ProgressBar';
 import { Globe, Mail, Zap } from 'lucide-react';

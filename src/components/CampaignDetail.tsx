@@ -1,4 +1,3 @@
-import React from 'react';
 import { ArrowLeft, ExternalLink, Download } from 'lucide-react';
 import { Campaign } from '../types';
 import ProgressBar from './ProgressBar';
@@ -8,9 +7,10 @@ interface CampaignDetailProps {
   campaign: Campaign;
   onBack: () => void;
   onDownloadCsv: () => void;
+  isLoading: boolean;
 }
 
-export default function CampaignDetail({ campaign, onBack, onDownloadCsv }: CampaignDetailProps) {
+export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoading }: CampaignDetailProps) {
   const processedCount = campaign.leads.filter(
     (l) => l.status === 'email_sent' || l.status === 'added_to_crm' || l.status === 'building' || l.status === 'scraping'
   ).length;
@@ -40,6 +40,7 @@ export default function CampaignDetail({ campaign, onBack, onDownloadCsv }: Camp
         </h1>
         <p className="text-grow-text-secondary text-sm">
           {campaign.totalLeads} leads · Started {campaign.startedAt}
+          {isLoading ? ' · Refreshing...' : ''}
         </p>
       </div>
 
@@ -85,38 +86,46 @@ export default function CampaignDetail({ campaign, onBack, onDownloadCsv }: Camp
         </div>
 
         {/* Table Rows */}
-        {campaign.leads.map((lead, index) => (
-          <div
-            key={lead.id}
-            className="grid grid-cols-12 gap-4 px-5 py-3.5 border-b border-grow-border/50 hover:bg-white/[0.02] transition-colors items-center opacity-0 animate-fade-in-up"
-            style={{ animationDelay: `${200 + index * 50}ms`, animationFillMode: 'forwards' }}
-          >
-            <div className="col-span-4">
-              <span className="text-sm text-grow-text">{lead.businessName}</span>
-            </div>
-            <div className="col-span-3 hidden md:block">
-              <span className="text-sm text-grow-text-secondary font-mono">{lead.phone}</span>
-            </div>
-            <div className="col-span-2">
-              <StatusPill status={lead.status} />
-            </div>
-            <div className="col-span-3 text-right">
-              {lead.previewUrl ? (
-                <a
-                  href={lead.previewUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-grow-accent text-sm hover:text-grow-accent-hover transition-colors font-medium"
-                >
-                  Preview Site
-                  <ExternalLink size={12} />
-                </a>
-              ) : (
-                <span className="text-grow-text-muted text-sm">—</span>
-              )}
-            </div>
+        {campaign.leads.length === 0 ? (
+          <div className="px-5 py-12 text-center">
+            <p className="text-grow-text-secondary text-sm">
+              {campaign.status === 'running' ? 'Scrape running. Leads will appear here soon.' : 'No leads found for this campaign.'}
+            </p>
           </div>
-        ))}
+        ) : (
+          campaign.leads.map((lead, index) => (
+            <div
+              key={lead.id}
+              className="grid grid-cols-12 gap-4 px-5 py-3.5 border-b border-grow-border/50 hover:bg-white/[0.02] transition-colors items-center opacity-0 animate-fade-in-up"
+              style={{ animationDelay: `${200 + index * 50}ms`, animationFillMode: 'forwards' }}
+            >
+              <div className="col-span-4">
+                <span className="text-sm text-grow-text">{lead.businessName}</span>
+              </div>
+              <div className="col-span-3 hidden md:block">
+                <span className="text-sm text-grow-text-secondary font-mono">{lead.phone || 'No phone'}</span>
+              </div>
+              <div className="col-span-2">
+                <StatusPill status={lead.status} />
+              </div>
+              <div className="col-span-3 text-right">
+                {lead.previewUrl ? (
+                  <a
+                    href={lead.previewUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-grow-accent text-sm hover:text-grow-accent-hover transition-colors font-medium"
+                  >
+                    Preview Site
+                    <ExternalLink size={12} />
+                  </a>
+                ) : (
+                  <span className="text-grow-text-muted text-sm">-</span>
+                )}
+              </div>
+            </div>
+          ))
+        )}
 
         {/* Footer */}
         <div className="flex items-center justify-between px-5 py-3 bg-grow-surface/30">

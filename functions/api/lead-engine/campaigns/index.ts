@@ -13,12 +13,18 @@ interface CreateBody {
 // POST /api/lead-engine/campaigns — create new campaign + kick off Apify scrape
 export const onRequest: PagesFunction<Env> = async (ctx) => {
   const { request, env } = ctx;
-  const supabase = getSupabase(env);
+  let supabase: ReturnType<typeof getSupabase>;
+
+  try {
+    supabase = getSupabase(env);
+  } catch (e) {
+    return error((e as Error).message, 500);
+  }
 
   if (request.method === 'GET') {
     const { data, error: dbErr } = await supabase
       .from('lead_campaigns')
-      .select('*, leads:lead_engine_leads(id, status)')
+      .select('*, leads:lead_engine_leads(id, business_name, phone, email, website, status, site_url)')
       .order('created_at', { ascending: false });
     if (dbErr) return error(dbErr.message, 500);
     return json({ campaigns: data });

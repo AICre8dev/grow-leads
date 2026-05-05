@@ -93,7 +93,7 @@ export const mockCampaigns: Campaign[] = [
 
 export const defaultSettings: Settings = {
   fromName: 'Grow Leads',
-  replyTo: 'hello@growagency.com',
+  replyTo: 'hello@growagency.co',
   aicre8ApiKey: '',
   apifyToken: '',
   emailTemplate: defaultEmailTemplate,

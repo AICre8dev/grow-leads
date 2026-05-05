@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Settings } from '../types';
 import { Save, Eye, EyeOff, Key } from 'lucide-react';
 
@@ -12,7 +12,7 @@ export default function SettingsPage({ settings, onSave }: SettingsPageProps) {
   const [showApiKey, setShowApiKey] = useState(false);
   const [showApifyToken, setShowApifyToken] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     onSave(form);
   };
@@ -59,7 +59,7 @@ export default function SettingsPage({ settings, onSave }: SettingsPageProps) {
                 type="email"
                 value={form.replyTo}
                 onChange={(e) => setForm({ ...form, replyTo: e.target.value })}
-                placeholder="hello@growagency.com"
+                placeholder="hello@growagency.co"
                 className={inputClass}
               />
             </div>

@@ -1,0 +1,15 @@
+# Local Cloudflare Pages Functions bindings.
+# Copy to .dev.vars and fill real values before running npm run dev:functions.
+
+SUPABASE_URL="https://xxx.supabase.co"
+SUPABASE_SERVICE_ROLE_KEY="eyJ..."
+
+APIFY_TOKEN="apify_api_xxx"
+
+AICRE8_API_KEY="ak_live_xxx"
+AICRE8_API_URL="https://aicre8.dev"
+
+RESEND_API_KEY="re_xxx"
+EMAIL_FROM="leads@yourdomain.com"
+
+CRON_SECRET="replace-with-a-long-random-string"

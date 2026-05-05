@@ -1,4 +1,3 @@
-import React from 'react';
 import { CheckCircle, XCircle, Info, X } from 'lucide-react';
 import { Toast as ToastType } from '../types';
 

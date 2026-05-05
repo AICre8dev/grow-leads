@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { ArrowRight } from 'lucide-react';
 
 interface NewCampaignInlineProps {
-  onCreate: (data: { niche: string; city: string; totalLeads: number; emailTemplate: string }) => void;
+  onCreate: (data: { niche: string; city: string; totalLeads: number; emailTemplate: string }) => Promise<boolean>;
+  isCreating: boolean;
 }
 
 const NICHES = [
@@ -34,15 +35,17 @@ If you like what you see, I'd love to chat about how we can help you get more cu
 Best,
 Grow Leads Team`;
 
-export default function NewCampaignInline({ onCreate }: NewCampaignInlineProps) {
+export default function NewCampaignInline({ onCreate, isCreating }: NewCampaignInlineProps) {
   const [niche, setNiche] = useState('');
   const [city, setCity] = useState('');
   const [totalLeads, setTotalLeads] = useState(10);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!niche || !city.trim()) return;
-    onCreate({ niche, city: city.trim(), totalLeads, emailTemplate: defaultTemplate });
+    if (!niche || !city.trim() || isCreating) return;
+    const created = await onCreate({ niche, city: city.trim(), totalLeads, emailTemplate: defaultTemplate });
+    if (!created) return;
+
     setNiche('');
     setCity('');
     setTotalLeads(10);
@@ -119,10 +122,11 @@ export default function NewCampaignInline({ onCreate }: NewCampaignInlineProps) 
         {/* Submit */}
         <button
           type="submit"
-          className="w-full flex items-center justify-center gap-2 bg-grow-accent hover:bg-grow-accent-hover text-white font-semibold text-sm py-3.5 rounded-lg transition-colors"
+          disabled={isCreating}
+          className="w-full flex items-center justify-center gap-2 bg-grow-accent hover:bg-grow-accent-hover text-white font-semibold text-sm py-3.5 rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Find Leads & Build Sites
-          <ArrowRight size={16} />
+          {isCreating ? 'Starting Campaign...' : 'Find Leads & Build Sites'}
+          {!isCreating && <ArrowRight size={16} />}
         </button>
       </form>
     </div>

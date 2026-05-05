@@ -1,25 +1,29 @@
-import React from 'react';
 import { Campaign } from '../types';
-import CampaignCard from './CampaignCard';
 import NewCampaignInline from './NewCampaignInline';
 
 interface DashboardProps {
   campaigns: Campaign[];
-  onNewCampaign: (data: { niche: string; city: string; totalLeads: number; emailTemplate: string }) => void;
+  onNewCampaign: (data: { niche: string; city: string; totalLeads: number; emailTemplate: string }) => Promise<boolean>;
   onSelectCampaign: (id: string) => void;
+  isLoading: boolean;
+  isCreating: boolean;
 }
 
-export default function Dashboard({ campaigns, onNewCampaign, onSelectCampaign }: DashboardProps) {
+export default function Dashboard({ campaigns, onNewCampaign, onSelectCampaign, isLoading, isCreating }: DashboardProps) {
   return (
     <div className="max-w-3xl mx-auto px-4 md:px-6 pt-24 pb-16">
       {/* Inline New Campaign Form */}
-      <NewCampaignInline onCreate={onNewCampaign} />
+      <NewCampaignInline onCreate={onNewCampaign} isCreating={isCreating} />
 
       {/* My Campaigns */}
       <div className="mt-10">
         <h2 className="text-grow-text font-semibold text-lg mb-4">My Campaigns</h2>
 
-        {campaigns.length === 0 ? (
+        {isLoading ? (
+          <div className="text-center py-16 opacity-0 animate-fade-in-up" style={{ animationFillMode: 'forwards' }}>
+            <p className="text-grow-text-secondary text-sm">Loading campaigns...</p>
+          </div>
+        ) : campaigns.length === 0 ? (
           <div className="text-center py-16 opacity-0 animate-fade-in-up" style={{ animationFillMode: 'forwards' }}>
             <p className="text-grow-text-secondary text-sm">No campaigns yet. Create your first one above.</p>
           </div>

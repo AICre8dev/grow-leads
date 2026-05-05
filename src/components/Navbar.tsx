@@ -1,4 +1,3 @@
-import React from 'react';
 import { LayoutDashboard, Settings, LogOut } from 'lucide-react';
 
 interface NavbarProps {
@@ -44,7 +43,7 @@ export default function Navbar({ currentPage, onNavigate }: NavbarProps) {
 
         <div className="w-px h-5 bg-grow-border mx-2" />
 
-        <span className="text-grow-text-secondary text-xs hidden md:block mr-2">hello@growagency.com</span>
+        <span className="text-grow-text-secondary text-xs hidden md:block mr-2">hello@growagency.co</span>
 
         <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-grow-text-secondary hover:text-grow-text hover:bg-white/[0.04] transition-colors">
           <span className="hidden sm:inline">Log out</span>

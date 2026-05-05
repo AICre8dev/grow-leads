@@ -1,19 +1,22 @@
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Dashboard from './components/Dashboard';
 import CampaignDetail from './components/CampaignDetail';
 import SettingsPage from './components/SettingsPage';
-import NewCampaignModal from './components/NewCampaignModal';
 import ToastContainer from './components/ToastContainer';
 import { Campaign, Settings, Toast } from './types';
-import { mockCampaigns, defaultSettings } from './data/mockData';
+import { defaultSettings } from './data/mockData';
+import { createCampaign, getCampaign, listCampaigns } from './lib/api';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('dashboard');
-  const [campaigns, setCampaigns] = useState<Campaign[]>(mockCampaigns);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(true);
+  const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
 
   const addToast = useCallback((message: string, type: Toast['type'] = 'success') => {
     const id = Date.now().toString();
@@ -37,43 +40,75 @@ export default function App() {
     }, 300);
   }, []);
 
+  const refreshCampaigns = useCallback(async (showError = false) => {
+    try {
+      const nextCampaigns = await listCampaigns();
+      setCampaigns(nextCampaigns);
+    } catch (e) {
+      if (showError) {
+        addToast((e as Error).message || 'Could not load campaigns', 'error');
+      }
+    } finally {
+      setIsLoadingCampaigns(false);
+    }
+  }, [addToast]);
+
   const handleNavigate = (page: string) => {
     setCurrentPage(page);
     setSelectedCampaignId(null);
   };
 
+  const refreshSelectedCampaign = useCallback(async (id: string, showLoading = true) => {
+    if (showLoading) setIsLoadingDetail(true);
+    try {
+      const detail = await getCampaign(id);
+      setCampaigns((prev) => prev.map((campaign) => (campaign.id === id ? detail : campaign)));
+    } catch (e) {
+      addToast((e as Error).message || 'Could not load campaign detail', 'error');
+    } finally {
+      if (showLoading) setIsLoadingDetail(false);
+    }
+  }, [addToast]);
+
+  useEffect(() => {
+    refreshCampaigns(true);
+  }, [refreshCampaigns]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      refreshCampaigns(false);
+      if (selectedCampaignId) {
+        refreshSelectedCampaign(selectedCampaignId, false);
+      }
+    }, 15_000);
+
+    return () => window.clearInterval(interval);
+  }, [refreshCampaigns, refreshSelectedCampaign, selectedCampaignId]);
+
   const handleSelectCampaign = (id: string) => {
     setSelectedCampaignId(id);
     setCurrentPage('campaign-detail');
+    refreshSelectedCampaign(id);
   };
 
-  const handleCreateCampaign = (data: {
+  const handleCreateCampaign = async (data: {
     niche: string;
     city: string;
     totalLeads: number;
     emailTemplate: string;
-  }) => {
-    const newCampaign: Campaign = {
-      id: `camp-${Date.now()}`,
-      niche: data.niche,
-      city: data.city,
-      totalLeads: data.totalLeads,
-      progress: 0,
-      status: 'pending',
-      startedAt: 'Just now',
-      emailTemplate: data.emailTemplate,
-      stats: { scraped: 0, sitesBuilt: 0, addedToCrm: 0, emailsSent: 0 },
-      leads: Array.from({ length: data.totalLeads }, (_, i) => ({
-        id: `l-new-${Date.now()}-${i}`,
-        businessName: `${data.niche} Business ${i + 1}`,
-        phone: `(555) 000-${String(i).padStart(4, '0')}`,
-        email: `info@business${i + 1}.com`,
-        website: `business${i + 1}.com`,
-        status: 'pending' as const,
-      })),
-    };
-    setCampaigns((prev) => [newCampaign, ...prev]);
-    addToast(`Campaign "${data.niche} in ${data.city}" created`, 'success');
+  }): Promise<boolean> => {
+    setIsCreatingCampaign(true);
+    try {
+      const campaign = await createCampaign(data);
+      setCampaigns((prev) => [campaign, ...prev]);
+      addToast(`Campaign "${data.niche} in ${data.city}" started`, 'success');
+      return true;
+    } catch (e) {
+      addToast((e as Error).message || 'Could not create campaign', 'error');
+      return false;
+    } finally {
+      setIsCreatingCampaign(false);
+    }
   };
 
   const handleSaveSettings = (newSettings: Settings) => {
@@ -95,7 +130,9 @@ export default function App() {
       l.previewUrl || '',
     ]);
 
-    const csv = [headers, ...rows].map((row) => row.map((cell) => `"${cell}"`).join(',')).join('\n');
+    const csv = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -120,6 +157,8 @@ export default function App() {
           campaigns={campaigns}
           onNewCampaign={handleCreateCampaign}
           onSelectCampaign={handleSelectCampaign}
+          isLoading={isLoadingCampaigns}
+          isCreating={isCreatingCampaign}
         />
       )}
 
@@ -128,6 +167,7 @@ export default function App() {
           campaign={selectedCampaign}
           onBack={() => handleNavigate('dashboard')}
           onDownloadCsv={handleDownloadCsv}
+          isLoading={isLoadingDetail}
         />
       )}
 

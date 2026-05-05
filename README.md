@@ -27,7 +27,7 @@ cp .env.example .env
 | --- | --- |
 | `APIFY_TOKEN` | apify.com → Settings → Integrations → API token |
 | `RESEND_API_KEY` | resend.com → API Keys |
-| `AICRE8_API_KEY` | aicre8.dev → account settings (ask @aicre8dev) |
+| `AICRE8_API_KEY` | aicre8.dev → Settings → API Keys (`ak_live_...`) |
 | `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` | copy from your existing Grow Supabase project |
 | `EMAIL_FROM` | a Resend-verified sender address |
 | `CRON_SECRET` | `openssl rand -hex 32` |
@@ -43,7 +43,9 @@ supabase/migrations/20260421000000_grow_leads.sql
 
 ```bash
 npm run dev              # frontend only (mock data)
-npm run dev:functions    # frontend + backend functions via wrangler
+npm run build
+cp .dev.vars.example .dev.vars
+npm run dev:functions    # built frontend + backend functions via wrangler on :8788
 ```
 
 ### 5. Deploy
@@ -75,6 +77,10 @@ pending → scraping → building → added_to_crm → email_sent
                                       ↓
                                    failed
 ```
+
+## Current integration note
+
+The frontend now calls the local `/api/lead-engine/*` routes instead of mock data. The cron route still assumes `AICRE8_API_URL` exposes a one-shot site-builder endpoint at `/api/agent/build-site`; the current public AICre8 API uses create/generate/deploy project endpoints, so that adapter needs to exist before the full Apify → AICre8 → Resend chain can be verified end-to-end.
 
 ## Porting to Grow later
 
