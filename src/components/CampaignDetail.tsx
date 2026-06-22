@@ -1,5 +1,7 @@
-import { ArrowLeft, ExternalLink, Download } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowLeft, ExternalLink, Download, Star } from 'lucide-react';
 import { Campaign } from '../types';
+import { getReviewOpportunity } from '../lib/opportunity';
 import ProgressBar from './ProgressBar';
 import StatusPill from './StatusPill';
 
@@ -11,6 +13,12 @@ interface CampaignDetailProps {
 }
 
 export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoading }: CampaignDetailProps) {
+  const [reviewOppOnly, setReviewOppOnly] = useState(false);
+
+  const leadsWithOpp = campaign.leads.map((lead) => ({ lead, opp: getReviewOpportunity(lead) }));
+  const reviewOppCount = leadsWithOpp.filter((x) => x.opp.isOpportunity).length;
+  const displayedLeads = reviewOppOnly ? leadsWithOpp.filter((x) => x.opp.isOpportunity) : leadsWithOpp;
+
   const foundCount = campaign.leads.length || campaign.stats.scraped;
   const buildBlockedCount = campaign.leads.filter(
     (lead) => lead.status === 'failed' && /project limit|AICre8/i.test(lead.errorMessage || ''),
@@ -94,6 +102,26 @@ export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoad
         </div>
       </div>
 
+      {/* Opportunity filter bar */}
+      {reviewOppCount > 0 && (
+        <div className="mb-3 flex items-center justify-between px-1">
+          <span className="text-xs text-grow-text-secondary">
+            <span className="font-semibold text-amber-300">{reviewOppCount}</span> of {foundCount} have a Google review opportunity
+          </span>
+          <button
+            onClick={() => setReviewOppOnly((v) => !v)}
+            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+              reviewOppOnly
+                ? 'border-amber-500/40 bg-amber-500/10 text-amber-300'
+                : 'border-grow-border text-grow-text-secondary hover:border-grow-border-hover'
+            }`}
+          >
+            <Star size={12} className={reviewOppOnly ? 'fill-amber-300' : ''} />
+            {reviewOppOnly ? 'Showing review opportunities' : 'Review opportunities only'}
+          </button>
+        </div>
+      )}
+
       {/* Leads Table */}
       <div
         className="bg-grow-card border border-grow-border rounded-xl overflow-hidden opacity-0 animate-fade-in-up"
@@ -123,7 +151,7 @@ export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoad
             </p>
           </div>
         ) : (
-          campaign.leads.map((lead, index) => (
+          displayedLeads.map(({ lead, opp }, index) => (
             <div
               key={lead.id}
               className="grid grid-cols-12 gap-4 px-5 py-3.5 border-b border-grow-border/50 hover:bg-white/[0.02] transition-colors items-center opacity-0 animate-fade-in-up"
@@ -138,6 +166,15 @@ export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoad
                   <span className="mt-1 block text-xs text-grow-text-secondary">
                     {lead.rating ? `${lead.rating.toFixed(1)} rating` : 'Rating not found'}
                     {lead.reviewsCount ? ` · ${lead.reviewsCount} reviews` : ''}
+                  </span>
+                )}
+                {opp.isOpportunity && (
+                  <span
+                    className="mt-1.5 inline-flex items-center gap-1 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-300"
+                    title={`Review opportunity: ${opp.reasons.join(', ')}`}
+                  >
+                    <Star size={10} className="fill-amber-300" />
+                    {opp.pitch} · {opp.reasons.join(' · ')}
                   </span>
                 )}
               </div>
