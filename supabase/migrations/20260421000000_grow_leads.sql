@@ -4,6 +4,7 @@
 create table if not exists lead_campaigns (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade,
+  client_name text,
   niche text not null,
   city text not null,
   lead_count int not null default 10,
