@@ -1,8 +1,17 @@
 import type { Env } from '../../../_shared/supabase';
-import { getSupabase, json, error } from '../../../_shared/supabase';
+import {
+  getAicre8ApiKey,
+  getAicre8ApiUrl,
+  getApifyToken,
+  getEmailFrom,
+  getSupabase,
+  json,
+  error,
+} from '../../../_shared/supabase';
 import { getRun, getDataset, type ApifyPlace } from '../../../_shared/apify';
 import { buildSite } from '../../../_shared/aicre8';
 import { sendEmail, renderOutreachEmail } from '../../../_shared/email';
+import { refundReservedCredits } from '../../../_shared/credits';
 
 const BATCH_SIZE = 3; // leads processed per invocation per status
 
@@ -12,10 +21,7 @@ interface LeadWithCampaign {
   business_name: string;
   email: string;
   site_url: string;
-  lead_campaigns?: {
-    email_template?: string | null;
-    niche?: string | null;
-  } | null;
+  email_template?: string | null;
 }
 
 // POST /api/lead-engine/cron/process
@@ -56,28 +62,36 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
 
     summary.scrapesChecked++;
     try {
-      const run = await getRun(env.APIFY_TOKEN, runId);
+      const apifyToken = getApifyToken(env);
+      const run = await getRun(apifyToken, runId);
       if (run.status === 'FAILED' || run.status === 'ABORTED' || run.status === 'TIMED-OUT') {
         await supabase
           .from('lead_campaigns')
           .update({ status: 'failed', stats: { ...stats, apifyStatus: run.status } })
           .eq('id', campaign.id);
+        if (campaign.user_id && campaign.credit_cost && campaign.credit_status === 'reserved') {
+          await refundReservedCredits(supabase, campaign.user_id, campaign.id, campaign.credit_cost, {
+            reason: 'apify_run_failed',
+            apifyStatus: run.status,
+          }).catch((e) => summary.errors.push(`campaign ${campaign.id} credit refund: ${(e as Error).message}`));
+        }
         summary.errors.push(`campaign ${campaign.id}: Apify run ${run.status}`);
         continue;
       }
 
       if (run.status !== 'SUCCEEDED') continue; // still running, check next cron
 
-      const places = await getDataset(env.APIFY_TOKEN, run.defaultDatasetId);
-      const noWebsite = places
-        .filter((p) => !p.website || p.website.trim() === '')
+      const places = await getDataset(apifyToken, run.defaultDatasetId);
+      const noWebsite = places.filter((p) => !p.website || p.website.trim() === '');
+      const qualifyingPlaces = (noWebsite.length > 0 ? noWebsite : places)
         .slice(0, campaign.lead_count);
 
-      const leadRows = noWebsite.map((p: ApifyPlace) => ({
+      const leadRows = qualifyingPlaces.map((p: ApifyPlace) => ({
         campaign_id: campaign.id,
         business_name: p.title,
         phone: p.phone,
         email: (p.emails && p.emails[0]) || null,
+        website: p.website || null,
         address: p.address,
         place_id: p.placeId,
         rating: p.totalScore,
@@ -89,6 +103,11 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
       }));
 
       if (leadRows.length === 0) {
+        if (campaign.user_id && campaign.credit_cost && campaign.credit_status === 'reserved') {
+          await refundReservedCredits(supabase, campaign.user_id, campaign.id, campaign.credit_cost, {
+            reason: 'no_qualifying_leads',
+          }).catch((e) => summary.errors.push(`campaign ${campaign.id} credit refund: ${(e as Error).message}`));
+        }
         await supabase
           .from('lead_campaigns')
           .update({ status: 'complete', stats: { ...stats, scraped: 0 } })
@@ -122,7 +141,7 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
     try {
       await supabase.from('lead_engine_leads').update({ status: 'building' }).eq('id', lead.id);
 
-      const result = await buildSite(env.AICRE8_API_KEY, env.AICRE8_API_URL, {
+      const result = await buildSite(getAicre8ApiKey(env), getAicre8ApiUrl(env), {
         businessName: lead.business_name,
         phone: lead.phone,
         email: lead.email,
@@ -156,17 +175,34 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
   // 3. Send emails for leads with site_url + email but no email_sent_at
   const { data: needEmail } = await supabase
     .from('lead_engine_leads')
-    .select('*, lead_campaigns(email_template, niche)')
+    .select('*')
     .eq('status', 'added_to_crm')
     .not('site_url', 'is', null)
     .not('email', 'is', null)
     .is('email_sent_at', null)
     .limit(BATCH_SIZE);
 
+  const emailCampaignIds = Array.from(new Set((needEmail || []).map((lead) => lead.campaign_id)));
+  const campaignTemplates = new Map<string, string>();
+  if (emailCampaignIds.length > 0) {
+    const { data: emailCampaigns, error: emailCampaignsErr } = await supabase
+      .from('lead_campaigns')
+      .select('id, email_template')
+      .in('id', emailCampaignIds);
+
+    if (emailCampaignsErr) {
+      summary.errors.push(`email campaign lookup: ${emailCampaignsErr.message}`);
+    } else {
+      for (const campaign of emailCampaigns || []) {
+        campaignTemplates.set(campaign.id, campaign.email_template || '');
+      }
+    }
+  }
+
   for (const lead of needEmail || []) {
     try {
       const leadWithCampaign = lead as LeadWithCampaign;
-      const template = leadWithCampaign.lead_campaigns?.email_template || '';
+      const template = campaignTemplates.get(leadWithCampaign.campaign_id) || '';
       const { subject, html } = renderOutreachEmail({
         businessName: leadWithCampaign.business_name,
         siteUrl: leadWithCampaign.site_url,
@@ -175,7 +211,7 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
 
       await sendEmail(env.RESEND_API_KEY, {
         to: leadWithCampaign.email,
-        from: env.EMAIL_FROM,
+        from: getEmailFrom(env),
         subject,
         html,
       });
@@ -195,7 +231,7 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
   // 4. Mark campaigns complete when all leads are in final state
   const { data: maybeComplete } = await supabase
     .from('lead_campaigns')
-    .select('id, lead_count, stats')
+    .select('id, lead_count, stats, user_id, credit_cost, credit_status')
     .eq('status', 'running');
 
   for (const camp of maybeComplete || []) {
@@ -213,6 +249,15 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
     });
 
     if (!hasUnfinishedLead) {
+      if (camp.user_id && camp.credit_cost && camp.credit_status === 'reserved') {
+        const { error: spendErr } = await supabase.rpc('spend_reserved_grow_credits', {
+          p_user_id: camp.user_id,
+          p_campaign_id: camp.id,
+          p_amount: camp.credit_cost,
+          p_metadata: { reason: 'campaign_complete' },
+        });
+        if (spendErr) summary.errors.push(`campaign ${camp.id} credit spend: ${spendErr.message}`);
+      }
       await supabase.from('lead_campaigns').update({ status: 'complete' }).eq('id', camp.id);
     }
   }
