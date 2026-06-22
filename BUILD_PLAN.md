@@ -7,3 +7,4 @@
 - Settings page with email sender, API keys, and email template configuration
 - All interactions use in-memory mock data with React state — no real APIs
 - Toast notifications, staggered animations, and polished micro-interactions throughout
+- Grow credit gate planning lives in `CREDIT_GATE_PLAN.md`: user credit balances, ledger events, campaign creation enforcement, and UI blocked states.

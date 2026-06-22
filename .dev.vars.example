@@ -5,11 +5,27 @@ SUPABASE_URL="https://xxx.supabase.co"
 SUPABASE_SERVICE_ROLE_KEY="eyJ..."
 
 APIFY_TOKEN="apify_api_xxx"
+# AICre8 Cloudflare alias also supported:
+# APIFY_API_TOKEN="apify_api_xxx"
 
 AICRE8_API_KEY="ak_live_xxx"
 AICRE8_API_URL="https://aicre8.dev"
 
 RESEND_API_KEY="re_xxx"
 EMAIL_FROM="leads@yourdomain.com"
+# AICre8 Cloudflare alias also supported:
+# RESEND_FROM_EMAIL="leads@yourdomain.com"
 
 CRON_SECRET="replace-with-a-long-random-string"
+
+# Stripe is needed for credit checkout/top-ups.
+STRIPE_SECRET_KEY="sk_test_xxx"
+STRIPE_WEBHOOK_SECRET="whsec_xxx"
+# AICre8 Cloudflare aliases also supported:
+# STRIPE_LIVE_SECRET_KEY="sk_live_xxx"
+# STRIPE_SECRET_KEY_LIVE="sk_live_xxx"
+# STRIPE_LIVE_WEBHOOK_SECRET="whsec_xxx"
+# STRIPE_WEBHOOK_SECRET_LIVE="whsec_xxx"
+
+# Optional local/dev fallback until GrowAgents.co sends Supabase auth.
+GROW_DEMO_USER_ID="00000000-0000-0000-0000-000000000000"
