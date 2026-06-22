@@ -11,12 +11,21 @@ interface CampaignDetailProps {
 }
 
 export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoading }: CampaignDetailProps) {
+  const foundCount = campaign.leads.length || campaign.stats.scraped;
+  const buildBlockedCount = campaign.leads.filter(
+    (lead) => lead.status === 'failed' && /project limit|AICre8/i.test(lead.errorMessage || ''),
+  ).length;
   const processedCount = campaign.leads.filter(
-    (l) => l.status === 'email_sent' || l.status === 'added_to_crm' || l.status === 'building' || l.status === 'scraping'
+    (l) =>
+      l.status === 'email_sent' ||
+      l.status === 'added_to_crm' ||
+      l.status === 'building' ||
+      l.status === 'scraping' ||
+      l.status === 'failed'
   ).length;
 
   const stages = [
-    { label: 'Scraped', value: campaign.stats.scraped },
+    { label: 'Search Results', value: foundCount },
     { label: 'Site Built', value: campaign.stats.sitesBuilt },
     { label: 'Added to CRM', value: campaign.stats.addedToCrm },
     { label: 'Outreach Sent', value: campaign.stats.emailsSent },
@@ -39,10 +48,31 @@ export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoad
           {campaign.niche} in {campaign.city}
         </h1>
         <p className="text-grow-text-secondary text-sm">
-          {campaign.totalLeads} leads · Started {campaign.startedAt}
+          {campaign.clientName ? `${campaign.clientName} · ` : ''}{foundCount} found · {campaign.totalLeads} requested · Started {campaign.startedAt}
           {isLoading ? ' · Refreshing...' : ''}
         </p>
       </div>
+
+      {foundCount > 0 && (
+        <div
+          className="mb-6 rounded-lg border border-grow-border bg-grow-card p-4 opacity-0 animate-fade-in-up"
+          style={{ animationDelay: '40ms', animationFillMode: 'forwards' }}
+        >
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-grow-text text-sm font-semibold">Search results are in</h2>
+              <p className="mt-1 text-sm text-grow-text-secondary">
+                {foundCount} businesses were found and saved. You can use these leads even before preview sites or emails are ready.
+              </p>
+            </div>
+            {buildBlockedCount > 0 && (
+              <span className="inline-flex rounded-md border border-amber-500/20 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-300">
+                {buildBlockedCount} preview builds blocked by AICre8 project limit
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Overall Progress Card */}
       <div
@@ -71,16 +101,16 @@ export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoad
       >
         {/* Table Header */}
         <div className="grid grid-cols-12 gap-4 px-5 py-3 border-b border-grow-border bg-grow-surface/50">
-          <div className="col-span-4 text-[11px] font-medium text-grow-text-secondary uppercase tracking-wider">
-            Business Name
+          <div className="col-span-5 text-[11px] font-medium text-grow-text-secondary uppercase tracking-wider">
+            Search Result
           </div>
           <div className="col-span-3 text-[11px] font-medium text-grow-text-secondary uppercase tracking-wider hidden md:block">
-            Phone
+            Contact
           </div>
           <div className="col-span-2 text-[11px] font-medium text-grow-text-secondary uppercase tracking-wider">
             Status
           </div>
-          <div className="col-span-3 text-[11px] font-medium text-grow-text-secondary uppercase tracking-wider text-right">
+          <div className="col-span-2 text-[11px] font-medium text-grow-text-secondary uppercase tracking-wider text-right">
             Action
           </div>
         </div>
@@ -99,16 +129,26 @@ export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoad
               className="grid grid-cols-12 gap-4 px-5 py-3.5 border-b border-grow-border/50 hover:bg-white/[0.02] transition-colors items-center opacity-0 animate-fade-in-up"
               style={{ animationDelay: `${200 + index * 50}ms`, animationFillMode: 'forwards' }}
             >
-              <div className="col-span-4">
-                <span className="text-sm text-grow-text">{lead.businessName}</span>
+              <div className="col-span-5 min-w-0">
+                <span className="block truncate text-sm text-grow-text">{lead.businessName}</span>
+                <span className="mt-1 block truncate text-xs text-grow-text-muted">
+                  {lead.address || lead.website || 'No address found'}
+                </span>
+                {(lead.rating || lead.reviewsCount) && (
+                  <span className="mt-1 block text-xs text-grow-text-secondary">
+                    {lead.rating ? `${lead.rating.toFixed(1)} rating` : 'Rating not found'}
+                    {lead.reviewsCount ? ` · ${lead.reviewsCount} reviews` : ''}
+                  </span>
+                )}
               </div>
               <div className="col-span-3 hidden md:block">
-                <span className="text-sm text-grow-text-secondary font-mono">{lead.phone || 'No phone'}</span>
+                <span className="block text-sm text-grow-text-secondary font-mono">{lead.phone || 'No phone'}</span>
+                <span className="mt-1 block truncate text-xs text-grow-text-muted">{lead.email || 'No email found'}</span>
               </div>
               <div className="col-span-2">
-                <StatusPill status={lead.status} />
+                <StatusPill status={lead.status} errorMessage={lead.errorMessage} />
               </div>
-              <div className="col-span-3 text-right">
+              <div className="col-span-2 text-right">
                 {lead.previewUrl ? (
                   <a
                     href={lead.previewUrl}
@@ -120,7 +160,13 @@ export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoad
                     <ExternalLink size={12} />
                   </a>
                 ) : (
-                  <span className="text-grow-text-muted text-sm">-</span>
+                  <span className="text-grow-text-muted text-sm">
+                    {lead.status === 'failed' && /project limit|AICre8/i.test(lead.errorMessage || '')
+                      ? 'Lead saved'
+                      : lead.status === 'failed'
+                        ? 'Needs review'
+                        : 'Result saved'}
+                  </span>
                 )}
               </div>
             </div>
@@ -130,7 +176,7 @@ export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoad
         {/* Footer */}
         <div className="flex items-center justify-between px-5 py-3 bg-grow-surface/30">
           <span className="text-grow-text-secondary text-xs">
-            {processedCount} of {campaign.totalLeads} leads processed
+            {foundCount} search results shown · {processedCount} processed · {campaign.totalLeads} requested
           </span>
           <button
             onClick={onDownloadCsv}

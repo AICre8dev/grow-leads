@@ -47,7 +47,7 @@ export default function SettingsPage({ settings, onSave }: SettingsPageProps) {
                 type="text"
                 value={form.fromName}
                 onChange={(e) => setForm({ ...form, fromName: e.target.value })}
-                placeholder="Grow Leads"
+                placeholder="Grow Leads Agent"
                 className={inputClass}
               />
             </div>

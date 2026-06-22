@@ -1,5 +1,6 @@
 interface StatusPillProps {
   status: string;
+  errorMessage?: string;
 }
 
 const statusConfig: Record<string, { label: string; classes: string }> = {
@@ -11,8 +12,11 @@ const statusConfig: Record<string, { label: string; classes: string }> = {
   failed: { label: 'Failed', classes: 'bg-red-500/10 text-red-400 border border-red-500/20' },
 };
 
-export default function StatusPill({ status }: StatusPillProps) {
-  const config = statusConfig[status] || statusConfig.pending;
+export default function StatusPill({ status, errorMessage }: StatusPillProps) {
+  const isBuildBlocked = status === 'failed' && /project limit|AICre8/i.test(errorMessage || '');
+  const config = isBuildBlocked
+    ? { label: 'Build blocked', classes: 'bg-amber-500/10 text-amber-300 border border-amber-500/20' }
+    : statusConfig[status] || statusConfig.pending;
 
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.classes}`}>

@@ -8,8 +8,8 @@
 }
 
 body {
-  background: #0a0a0f;
-  color: #e5e5e5;
+  background: #0f0e0b;
+  color: #f4efe6;
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -20,14 +20,14 @@ body {
   width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0a0a0f;
+  background: #0f0e0b;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2a2a35;
+  background: #2b271e;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3a3a45;
+  background: #463f31;
 }
 
 /* Remove transition from progress bar fill — handled by animation */
@@ -42,7 +42,7 @@ input[type='range'] {
   width: 100%;
   height: 6px;
   border-radius: 3px;
-  background: #1e1e2a;
+  background: #2b271e;
   outline: none;
 }
 
@@ -52,18 +52,18 @@ input[type='range']::-webkit-slider-thumb {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #3b82f6;
+  background: #ff7a1a;
   cursor: pointer;
-  border: 3px solid #0a0a0f;
-  box-shadow: 0 0 0 2px #3b82f6;
+  border: 3px solid #0f0e0b;
+  box-shadow: 0 0 0 2px #ff7a1a;
 }
 
 input[type='range']::-moz-range-thumb {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #3b82f6;
+  background: #ff7a1a;
   cursor: pointer;
-  border: 3px solid #0a0a0f;
-  box-shadow: 0 0 0 2px #3b82f6;
+  border: 3px solid #0f0e0b;
+  box-shadow: 0 0 0 2px #ff7a1a;
 }

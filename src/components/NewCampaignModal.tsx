@@ -4,7 +4,7 @@ import { X } from 'lucide-react';
 interface NewCampaignModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (data: { niche: string; city: string; totalLeads: number; emailTemplate: string }) => void;
+  onCreate: (data: { clientName?: string; niche: string; city: string; totalLeads: number; emailTemplate: string }) => void;
 }
 
 const defaultTemplate = `Hi {{business_name}},
@@ -16,11 +16,12 @@ Check it out here: {{preview_url}}
 If you like what you see, I'd love to chat about how we can help you get more customers online.
 
 Best,
-Grow Leads Team`;
+Grow Leads Agent Team`;
 
 export default function NewCampaignModal({ isOpen, onClose, onCreate }: NewCampaignModalProps) {
   const [niche, setNiche] = useState('');
   const [city, setCity] = useState('');
+  const [clientName, setClientName] = useState('');
   const [totalLeads, setTotalLeads] = useState(10);
   const [emailTemplate, setEmailTemplate] = useState(defaultTemplate);
 
@@ -29,7 +30,8 @@ export default function NewCampaignModal({ isOpen, onClose, onCreate }: NewCampa
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!niche.trim() || !city.trim()) return;
-    onCreate({ niche: niche.trim(), city: city.trim(), totalLeads, emailTemplate });
+    onCreate({ clientName: clientName.trim() || undefined, niche: niche.trim(), city: city.trim(), totalLeads, emailTemplate });
+    setClientName('');
     setNiche('');
     setCity('');
     setTotalLeads(10);
@@ -53,6 +55,10 @@ export default function NewCampaignModal({ isOpen, onClose, onCreate }: NewCampa
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          <div>
+            <label className="block text-xs font-medium text-grow-text-secondary uppercase tracking-wider mb-2">Client / Business</label>
+            <input type="text" value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="e.g. Ahmed Dental Marketing" className={inputClass} />
+          </div>
           <div>
             <label className="block text-xs font-medium text-grow-text-secondary uppercase tracking-wider mb-2">Niche</label>
             <input type="text" value={niche} onChange={(e) => setNiche(e.target.value)} placeholder="e.g. Electricians" className={inputClass} />

@@ -9,11 +9,12 @@ Check it out here: {{preview_url}}
 If you like what you see, I'd love to chat about how we can help you get more customers online.
 
 Best,
-Grow Leads Team`;
+Grow Leads Agent Team`;
 
 export const mockCampaigns: Campaign[] = [
   {
     id: 'camp-1',
+    clientName: 'Grow Agency',
     niche: 'Electricians',
     city: 'Tampa, FL',
     totalLeads: 10,
@@ -42,6 +43,7 @@ export const mockCampaigns: Campaign[] = [
   },
   {
     id: 'camp-2',
+    clientName: 'Austin Home Services',
     niche: 'Plumbers',
     city: 'Austin, TX',
     totalLeads: 10,
@@ -67,6 +69,7 @@ export const mockCampaigns: Campaign[] = [
   },
   {
     id: 'camp-3',
+    clientName: 'Miami Clinic Growth',
     niche: 'Dentists',
     city: 'Miami, FL',
     totalLeads: 10,
@@ -92,7 +95,7 @@ export const mockCampaigns: Campaign[] = [
 ];
 
 export const defaultSettings: Settings = {
-  fromName: 'Grow Leads',
+  fromName: 'Grow Leads Agent',
   replyTo: 'hello@growagency.co',
   aicre8ApiKey: '',
   apifyToken: '',
