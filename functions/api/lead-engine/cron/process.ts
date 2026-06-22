@@ -34,6 +34,10 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
   const secret = request.headers.get('x-cron-secret');
   if (secret !== env.CRON_SECRET) return error('Unauthorized', 401);
 
+  // stage=scrape -> only pull Apify results into leads; skip site builds + outreach
+  // emails (so leads/opportunities populate without firing cold outreach).
+  const scrapeOnly = new URL(request.url).searchParams.get('stage') === 'scrape';
+
   let supabase: ReturnType<typeof getSupabase>;
 
   try {
@@ -129,6 +133,7 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
     }
   }
 
+  if (!scrapeOnly) {
   // 2. Build sites for leads that need one (status = added_to_crm, no site_url yet)
   const { data: needSite } = await supabase
     .from('lead_engine_leads')
@@ -227,6 +232,8 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
       summary.errors.push(`lead ${lead.id} email: ${(e as Error).message}`);
     }
   }
+
+  } // end build + email stages (skipped when stage=scrape)
 
   // 4. Mark campaigns complete when all leads are in final state
   const { data: maybeComplete } = await supabase
