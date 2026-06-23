@@ -38,3 +38,18 @@ export function getReviewOpportunity(lead: Lead): ReviewOpportunity {
     pitch: reasons.length > 0 ? 'Review Boost' : '',
   };
 }
+
+// "Striking distance" = visible in the map results but not yet winning. These
+// are the best Rank Boost prospects: a small push lands them in the top 3.
+export const STRIKING_MIN = 4; // ranks 1-3 are already at the top
+export const STRIKING_MAX = 20; // beyond ~page 2 of the map results = too far
+
+export type RankBand = 'top' | 'striking' | 'far' | 'unknown';
+
+export function getRankBand(lead: Lead): RankBand {
+  const r = lead.mapRank;
+  if (typeof r !== 'number' || r < 1) return 'unknown';
+  if (r < STRIKING_MIN) return 'top';
+  if (r <= STRIKING_MAX) return 'striking';
+  return 'far';
+}

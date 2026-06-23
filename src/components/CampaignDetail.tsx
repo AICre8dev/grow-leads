@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ArrowLeft, ExternalLink, Download, Star } from 'lucide-react';
 import { Campaign } from '../types';
-import { getReviewOpportunity } from '../lib/opportunity';
+import { getReviewOpportunity, getRankBand } from '../lib/opportunity';
 import ProgressBar from './ProgressBar';
 import StatusPill from './StatusPill';
 
@@ -160,7 +160,26 @@ export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoad
               style={{ animationDelay: `${200 + index * 50}ms`, animationFillMode: 'forwards' }}
             >
               <div className="col-span-5 min-w-0">
-                <span className="block truncate text-sm text-grow-text">{lead.businessName}</span>
+                <div className="flex items-center gap-2">
+                  {typeof lead.mapRank === 'number' && (
+                    <span
+                      className={`flex-none rounded px-1.5 py-0.5 text-[11px] font-semibold border ${
+                        getRankBand(lead) === 'striking'
+                          ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                          : 'bg-grow-surface text-grow-text-muted border-grow-border'
+                      }`}
+                      title={`Map-pack rank #${lead.mapRank}`}
+                    >
+                      #{lead.mapRank}
+                    </span>
+                  )}
+                  <span className="truncate text-sm text-grow-text">{lead.businessName}</span>
+                  {getRankBand(lead) === 'striking' && (
+                    <span className="flex-none rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-300">
+                      Striking distance
+                    </span>
+                  )}
+                </div>
                 <span className="mt-1 block truncate text-xs text-grow-text-muted">
                   {lead.address || lead.website || 'No address found'}
                 </span>

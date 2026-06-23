@@ -38,6 +38,7 @@ interface LeadRow {
   address?: string | null;
   rating?: number | string | null;
   reviews_count?: number | null;
+  map_rank?: number | null;
   status: ApiLeadStatus;
   site_url?: string | null;
   error_message?: string | null;
@@ -297,6 +298,7 @@ function mapLead(row: LeadRow): Lead {
     address: row.address || undefined,
     rating: numberOr(row.rating, 0) || undefined,
     reviewsCount: typeof row.reviews_count === 'number' ? row.reviews_count : undefined,
+    mapRank: typeof row.map_rank === 'number' ? row.map_rank : undefined,
     status: row.status,
     previewUrl: row.site_url || undefined,
     errorMessage: row.error_message || undefined,

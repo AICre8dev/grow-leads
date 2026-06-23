@@ -8,7 +8,7 @@ import {
   json,
   error,
 } from '../../../_shared/supabase';
-import { getRun, getDataset, type ApifyPlace } from '../../../_shared/apify';
+import { getRun, getDataset } from '../../../_shared/apify';
 import { buildSite } from '../../../_shared/aicre8';
 import { sendEmail, renderOutreachEmail } from '../../../_shared/email';
 import { refundReservedCredits } from '../../../_shared/credits';
@@ -86,13 +86,16 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
       if (run.status !== 'SUCCEEDED') continue; // still running, check next cron
 
       const places = await getDataset(apifyToken, run.defaultDatasetId);
+      // Google returns results in rank order — capture the 1-based map-pack
+      // position before any filtering so we can flag "striking distance" leads.
+      const ranked = places.map((p, i) => ({ ...p, mapRank: i + 1 }));
       // Only keep businesses we can actually contact — must have a phone number.
-      const reachable = places.filter((p) => p.phone && p.phone.trim() !== '');
+      const reachable = ranked.filter((p) => p.phone && p.phone.trim() !== '');
       const noWebsite = reachable.filter((p) => !p.website || p.website.trim() === '');
       const qualifyingPlaces = (noWebsite.length > 0 ? noWebsite : reachable)
         .slice(0, campaign.lead_count);
 
-      const leadRows = qualifyingPlaces.map((p: ApifyPlace) => ({
+      const leadRows = qualifyingPlaces.map((p) => ({
         campaign_id: campaign.id,
         business_name: p.title,
         phone: p.phone,
@@ -102,6 +105,7 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
         place_id: p.placeId,
         rating: p.totalScore,
         reviews_count: p.reviewsCount,
+        map_rank: p.mapRank,
         reviews: p.reviews || [],
         photos: p.imageUrls || [],
         hours: p.openingHours || [],
@@ -121,7 +125,16 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
         continue;
       }
 
-      await supabase.from('lead_engine_leads').insert(leadRows);
+      let insert = await supabase.from('lead_engine_leads').insert(leadRows);
+      if (insert.error && /map_rank/i.test(insert.error.message)) {
+        // map_rank column not migrated yet — insert without it so leads still land
+        const stripped = leadRows.map(({ map_rank, ...rest }) => rest);
+        insert = await supabase.from('lead_engine_leads').insert(stripped);
+      }
+      if (insert.error) {
+        summary.errors.push(`campaign ${campaign.id} insert: ${insert.error.message}`);
+        continue;
+      }
       await supabase
         .from('lead_campaigns')
         .update({
