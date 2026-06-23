@@ -44,6 +44,30 @@ export function getReviewOpportunity(lead: Lead): ReviewOpportunity {
 export const STRIKING_MIN = 4; // ranks 1-3 are already at the top
 export const STRIKING_MAX = 20; // beyond ~page 2 of the map results = too far
 
+// Website signal. Real "bad website" = an SEO score (C2). Until then we flag
+// what's detectable from the URL alone: no site, no HTTPS, or social-page-only.
+const SOCIAL_OR_BUILDER_HOSTS = [
+  'facebook.com', 'm.facebook.com', 'instagram.com', 'twitter.com', 'x.com',
+  'linktr.ee', 'linktree', 'business.site', 'wixsite.com', 'sites.google.com',
+];
+
+export interface WebsiteOpportunity {
+  hasSite: boolean;
+  label: string; // '', 'No website', 'No HTTPS', 'Social page only'
+  isOpportunity: boolean;
+  pitch: string; // 'Build a website' | 'Rank Boost' | ''
+}
+
+export function getWebsiteOpportunity(lead: Lead): WebsiteOpportunity {
+  const site = (lead.website || '').trim();
+  if (!site) return { hasSite: false, label: 'No website', isOpportunity: true, pitch: 'Build a website' };
+  const lower = site.toLowerCase();
+  if (lower.startsWith('http://')) return { hasSite: true, label: 'No HTTPS', isOpportunity: true, pitch: 'Rank Boost' };
+  if (SOCIAL_OR_BUILDER_HOSTS.some((h) => lower.includes(h)))
+    return { hasSite: true, label: 'Social page only', isOpportunity: true, pitch: 'Build a website' };
+  return { hasSite: true, label: '', isOpportunity: false, pitch: '' };
+}
+
 export type RankBand = 'top' | 'striking' | 'far' | 'unknown';
 
 export function getRankBand(lead: Lead): RankBand {

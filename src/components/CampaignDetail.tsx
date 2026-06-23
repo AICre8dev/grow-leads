@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ArrowLeft, ExternalLink, Download, Star } from 'lucide-react';
 import { Campaign } from '../types';
-import { getReviewOpportunity, getRankBand } from '../lib/opportunity';
+import { getReviewOpportunity, getRankBand, getWebsiteOpportunity } from '../lib/opportunity';
 import ProgressBar from './ProgressBar';
 import StatusPill from './StatusPill';
 
@@ -17,7 +17,11 @@ export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoad
 
   // Only show contactable businesses — those with a phone number.
   const contactableLeads = campaign.leads.filter((lead) => lead.phone && lead.phone.trim() !== '');
-  const leadsWithOpp = contactableLeads.map((lead) => ({ lead, opp: getReviewOpportunity(lead) }));
+  const leadsWithOpp = contactableLeads.map((lead) => ({
+    lead,
+    opp: getReviewOpportunity(lead),
+    web: getWebsiteOpportunity(lead),
+  }));
   const reviewOppCount = leadsWithOpp.filter((x) => x.opp.isOpportunity).length;
   const displayedLeads = reviewOppOnly ? leadsWithOpp.filter((x) => x.opp.isOpportunity) : leadsWithOpp;
 
@@ -153,7 +157,7 @@ export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoad
             </p>
           </div>
         ) : (
-          displayedLeads.map(({ lead, opp }, index) => (
+          displayedLeads.map(({ lead, opp, web }, index) => (
             <div
               key={lead.id}
               className="grid grid-cols-12 gap-4 px-5 py-3.5 border-b border-grow-border/50 hover:bg-white/[0.02] transition-colors items-center opacity-0 animate-fade-in-up"
@@ -181,7 +185,33 @@ export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoad
                   )}
                 </div>
                 <span className="mt-1 block truncate text-xs text-grow-text-muted">
-                  {lead.address || lead.website || 'No address found'}
+                  {lead.address || 'No address found'}
+                </span>
+                <span className="mt-1 flex items-center gap-1.5 text-xs">
+                  {web.hasSite ? (
+                    <a
+                      href={lead.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="truncate text-grow-accent hover:underline max-w-[230px]"
+                    >
+                      {lead.website.replace(/^https?:\/\//, '')}
+                    </a>
+                  ) : (
+                    <span className="text-grow-text-muted">No website</span>
+                  )}
+                  {web.label && (
+                    <span
+                      className={`flex-none rounded px-1.5 py-0.5 text-[10px] font-medium border ${
+                        web.hasSite
+                          ? 'border-amber-500/40 bg-amber-500/10 text-amber-300'
+                          : 'border-red-500/40 bg-red-500/10 text-red-300'
+                      }`}
+                      title={`${web.label} — ${web.pitch}`}
+                    >
+                      {web.label}
+                    </span>
+                  )}
                 </span>
                 {(lead.rating || lead.reviewsCount) && (
                   <span className="mt-1 block text-xs text-grow-text-secondary">
