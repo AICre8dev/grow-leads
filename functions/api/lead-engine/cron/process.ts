@@ -90,10 +90,10 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
       // position before any filtering so we can flag "striking distance" leads.
       const ranked = places.map((p, i) => ({ ...p, mapRank: i + 1 }));
       // Only keep businesses we can actually contact — must have a phone number.
+      // Keep BOTH no-website (build-a-site) and website-having (rebuild + SEO)
+      // businesses, in map-rank order, so the opportunity finder sees the full mix.
       const reachable = ranked.filter((p) => p.phone && p.phone.trim() !== '');
-      const noWebsite = reachable.filter((p) => !p.website || p.website.trim() === '');
-      const qualifyingPlaces = (noWebsite.length > 0 ? noWebsite : reachable)
-        .slice(0, campaign.lead_count);
+      const qualifyingPlaces = reachable.slice(0, campaign.lead_count);
 
       const leadRows = qualifyingPlaces.map((p) => ({
         campaign_id: campaign.id,
