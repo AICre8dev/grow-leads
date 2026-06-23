@@ -15,11 +15,13 @@ interface CampaignDetailProps {
 export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoading }: CampaignDetailProps) {
   const [reviewOppOnly, setReviewOppOnly] = useState(false);
 
-  const leadsWithOpp = campaign.leads.map((lead) => ({ lead, opp: getReviewOpportunity(lead) }));
+  // Only show contactable businesses — those with a phone number.
+  const contactableLeads = campaign.leads.filter((lead) => lead.phone && lead.phone.trim() !== '');
+  const leadsWithOpp = contactableLeads.map((lead) => ({ lead, opp: getReviewOpportunity(lead) }));
   const reviewOppCount = leadsWithOpp.filter((x) => x.opp.isOpportunity).length;
   const displayedLeads = reviewOppOnly ? leadsWithOpp.filter((x) => x.opp.isOpportunity) : leadsWithOpp;
 
-  const foundCount = campaign.leads.length || campaign.stats.scraped;
+  const foundCount = contactableLeads.length || campaign.stats.scraped;
   const buildBlockedCount = campaign.leads.filter(
     (lead) => lead.status === 'failed' && /project limit|AICre8/i.test(lead.errorMessage || ''),
   ).length;

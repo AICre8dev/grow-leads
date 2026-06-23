@@ -86,8 +86,10 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
       if (run.status !== 'SUCCEEDED') continue; // still running, check next cron
 
       const places = await getDataset(apifyToken, run.defaultDatasetId);
-      const noWebsite = places.filter((p) => !p.website || p.website.trim() === '');
-      const qualifyingPlaces = (noWebsite.length > 0 ? noWebsite : places)
+      // Only keep businesses we can actually contact — must have a phone number.
+      const reachable = places.filter((p) => p.phone && p.phone.trim() !== '');
+      const noWebsite = reachable.filter((p) => !p.website || p.website.trim() === '');
+      const qualifyingPlaces = (noWebsite.length > 0 ? noWebsite : reachable)
         .slice(0, campaign.lead_count);
 
       const leadRows = qualifyingPlaces.map((p: ApifyPlace) => ({
