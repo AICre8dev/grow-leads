@@ -177,6 +177,16 @@ export async function createCreditCheckout(packId: string): Promise<string> {
   return url;
 }
 
+// Best-effort nudge: drains finished Apify scrapes into leads (scrape-only).
+// Safe to ignore failures — results surface via the campaign refresh.
+export async function processLeads(): Promise<void> {
+  try {
+    await fetch('/api/lead-engine/process-now', { method: 'POST' });
+  } catch {
+    /* background nudge */
+  }
+}
+
 export async function getCampaign(id: string): Promise<Campaign> {
   const { campaign, leads } = await fetchJson<CampaignDetailResponse>(`/api/lead-engine/campaigns/${id}`);
   return mapCampaign({ ...campaign, leads });

@@ -17,7 +17,7 @@ import {
   Toast,
 } from './types';
 import { defaultSettings } from './data/mockData';
-import { createCampaign, createCreditCheckout, getCampaign, getCredits, getUsage, listCampaigns } from './lib/api';
+import { createCampaign, createCreditCheckout, getCampaign, getCredits, getUsage, listCampaigns, processLeads } from './lib/api';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -104,12 +104,15 @@ export default function App() {
   }, [addToast]);
 
   useEffect(() => {
-    refreshCampaigns(true);
+    processLeads().finally(() => refreshCampaigns(true));
     refreshCredits(false);
   }, [refreshCampaigns, refreshCredits]);
 
   useEffect(() => {
-    const interval = window.setInterval(() => {
+    const interval = window.setInterval(async () => {
+      // Nudge the scrape processor so finished searches turn into leads
+      // (no scheduler on CF Pages), then pull the fresh data.
+      await processLeads();
       refreshCampaigns(false);
       if (selectedCampaignId) {
         refreshSelectedCampaign(selectedCampaignId, false);
