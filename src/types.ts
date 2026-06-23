@@ -8,6 +8,7 @@ export interface Lead {
   rating?: number;
   reviewsCount?: number;
   mapRank?: number;
+  seoScore?: number;
   status: 'pending' | 'scraping' | 'building' | 'added_to_crm' | 'email_sent' | 'failed';
   previewUrl?: string;
   errorMessage?: string;

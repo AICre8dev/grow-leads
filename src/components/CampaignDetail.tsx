@@ -203,11 +203,13 @@ export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoad
                   {web.label && (
                     <span
                       className={`flex-none rounded px-1.5 py-0.5 text-[10px] font-medium border ${
-                        web.hasSite
-                          ? 'border-amber-500/40 bg-amber-500/10 text-amber-300'
-                          : 'border-red-500/40 bg-red-500/10 text-red-300'
+                        !web.hasSite
+                          ? 'border-red-500/40 bg-red-500/10 text-red-300'
+                          : web.isOpportunity
+                            ? 'border-amber-500/40 bg-amber-500/10 text-amber-300'
+                            : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
                       }`}
-                      title={`${web.label} — ${web.pitch}`}
+                      title={web.pitch ? `${web.label} — ${web.pitch}` : web.label}
                     >
                       {web.label}
                     </span>

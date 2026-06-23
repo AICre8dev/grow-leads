@@ -40,7 +40,7 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
 
     const { data: leads, error: leadsErr } = await supabase
       .from('lead_engine_leads')
-      .select('id, campaign_id, business_name, phone, email, website, address, rating, reviews_count, map_rank, status, site_url, error_message')
+      .select('id, campaign_id, business_name, phone, email, website, address, rating, reviews_count, map_rank, seo_score, status, site_url, error_message')
       .in('campaign_id', campaignIds);
     if (leadsErr) return error(leadsErr.message, 500);
 

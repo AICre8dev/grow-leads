@@ -51,21 +51,33 @@ const SOCIAL_OR_BUILDER_HOSTS = [
   'linktr.ee', 'linktree', 'business.site', 'wixsite.com', 'sites.google.com',
 ];
 
+export const WEAK_SEO = 60; // overall_score below this = a "bad website" worth a rebuild
+
 export interface WebsiteOpportunity {
   hasSite: boolean;
-  label: string; // '', 'No website', 'No HTTPS', 'Social page only'
+  label: string; // '', 'No website', 'Bad site NN/100', 'No HTTPS', 'Social page only', 'SEO NN/100'
   isOpportunity: boolean;
-  pitch: string; // 'Build a website' | 'Rank Boost' | ''
+  pitch: string; // 'Build a website' | 'Rebuild + SEO' | ''
+  score?: number; // SEO score 0-100 once audited (C2)
 }
 
 export function getWebsiteOpportunity(lead: Lead): WebsiteOpportunity {
   const site = (lead.website || '').trim();
   if (!site) return { hasSite: false, label: 'No website', isOpportunity: true, pitch: 'Build a website' };
+
+  const score = typeof lead.seoScore === 'number' ? lead.seoScore : undefined;
   const lower = site.toLowerCase();
-  if (lower.startsWith('http://')) return { hasSite: true, label: 'No HTTPS', isOpportunity: true, pitch: 'Rank Boost' };
+
+  // A real SEO grade wins when we have it.
+  if (score !== undefined && score < WEAK_SEO)
+    return { hasSite: true, label: `Bad site ${score}/100`, isOpportunity: true, pitch: 'Rebuild + SEO', score };
+  if (lower.startsWith('http://'))
+    return { hasSite: true, label: 'No HTTPS', isOpportunity: true, pitch: 'Rebuild + SEO', score };
   if (SOCIAL_OR_BUILDER_HOSTS.some((h) => lower.includes(h)))
-    return { hasSite: true, label: 'Social page only', isOpportunity: true, pitch: 'Build a website' };
-  return { hasSite: true, label: '', isOpportunity: false, pitch: '' };
+    return { hasSite: true, label: 'Social page only', isOpportunity: true, pitch: 'Build a website', score };
+
+  // Has a site that looks fine — show the score as a neutral chip if we have it.
+  return { hasSite: true, label: score !== undefined ? `SEO ${score}/100` : '', isOpportunity: false, pitch: '', score };
 }
 
 export type RankBand = 'top' | 'striking' | 'far' | 'unknown';

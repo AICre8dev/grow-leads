@@ -50,6 +50,7 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
     leadsInserted: 0,
     sitesBuilt: 0,
     emailsSent: 0,
+    scored: 0,
     errors: [] as string[],
   };
 
@@ -249,6 +250,41 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
   }
 
   } // end build + email stages (skipped when stage=scrape)
+
+  // 3b. SEO scoring (C2) — grade website-having leads via AICre8's seo-score
+  // engine so we can flag "bad website → Rebuild + SEO" prospects. Best-effort,
+  // batched, and fully fault-tolerant: silently no-ops until the seo_score
+  // column AND the AICre8 endpoint both exist. Runs in every mode (incl. scrape).
+  try {
+    const { data: needScore, error: needErr } = await supabase
+      .from('lead_engine_leads')
+      .select('id, website')
+      .not('website', 'is', null)
+      .is('seo_score', null)
+      .limit(BATCH_SIZE);
+    if (!needErr && needScore && needScore.length > 0) {
+      const internalKey = (env as any).SUPABASE_SERVICE_ROLE_KEY as string;
+      for (const lead of needScore) {
+        try {
+          const res = await fetch('https://aicre8.dev/api/grow/seo-score', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-internal-key': internalKey },
+            body: JSON.stringify({ url: lead.website }),
+          });
+          if (!res.ok) continue;
+          const data = (await res.json()) as { score?: number | null };
+          // null score = site unreachable → store 0 (effectively no usable site)
+          const score = typeof data.score === 'number' ? data.score : 0;
+          await supabase.from('lead_engine_leads').update({ seo_score: score }).eq('id', lead.id);
+          summary.scored = (summary.scored || 0) + 1;
+        } catch {
+          /* skip this lead */
+        }
+      }
+    }
+  } catch {
+    /* seo_score column or endpoint not ready yet — skip scoring */
+  }
 
   // 4. Mark campaigns complete when all leads are in final state
   const { data: maybeComplete } = await supabase
