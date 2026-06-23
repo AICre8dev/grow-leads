@@ -1,4 +1,5 @@
-import { AudioLines, CreditCard, LayoutDashboard, LogOut, Network, Settings } from 'lucide-react';
+import { useState } from 'react';
+import { AudioLines, CreditCard, LayoutDashboard, LogOut, Moon, Network, Settings, Sun } from 'lucide-react';
 
 interface NavbarProps {
   currentPage: string;
@@ -6,6 +7,20 @@ interface NavbarProps {
 }
 
 export default function Navbar({ currentPage, onNavigate }: NavbarProps) {
+  const [dark, setDark] = useState(
+    () => typeof document !== 'undefined' && document.documentElement.classList.contains('dark'),
+  );
+  const toggleTheme = () => {
+    const next = !dark;
+    setDark(next);
+    document.documentElement.classList.toggle('dark', next);
+    try {
+      localStorage.setItem('grow-theme', next ? 'dark' : 'day');
+    } catch {
+      /* ignore */
+    }
+  };
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 h-16 bg-grow-bg/85 backdrop-blur-xl border-b border-grow-border flex items-center justify-between px-4 md:px-6">
       {/* Left: Logo */}
@@ -68,6 +83,15 @@ export default function Navbar({ currentPage, onNavigate }: NavbarProps) {
         >
           <Settings size={15} />
           <span className="hidden sm:inline">Settings</span>
+        </button>
+
+        <button
+          aria-label="Toggle day/night theme"
+          onClick={toggleTheme}
+          title={dark ? 'Switch to day' : 'Switch to night'}
+          className="flex items-center justify-center w-9 h-9 rounded-md text-grow-text-secondary hover:text-grow-text hover:bg-grow-surface transition-colors"
+        >
+          {dark ? <Sun size={16} /> : <Moon size={16} />}
         </button>
 
         <div className="w-px h-5 bg-grow-border mx-2" />

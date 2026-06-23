@@ -2,17 +2,53 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Theme tokens (rgb channels so Tailwind opacity modifiers work) ──
+   Day (light) is the default; .dark on <html> switches to night. */
+:root {
+  --grow-bg: 244 247 245;
+  --grow-surface: 238 242 240;
+  --grow-card: 255 255 255;
+  --grow-border: 227 234 230;
+  --grow-border-hover: 203 214 208;
+  --grow-accent: 22 179 100;       /* fresh green */
+  --grow-accent-hover: 14 122 69;
+  --grow-text: 16 36 27;
+  --grow-text-secondary: 93 107 99;
+  --grow-text-muted: 138 150 143;
+  color-scheme: light;
+}
+
+.dark {
+  --grow-bg: 15 14 11;
+  --grow-surface: 23 21 16;
+  --grow-card: 29 26 20;
+  --grow-border: 43 39 30;
+  --grow-border-hover: 70 63 49;
+  --grow-accent: 34 197 94;
+  --grow-accent-hover: 22 163 74;
+  --grow-text: 244 239 230;
+  --grow-text-secondary: 167 159 145;
+  --grow-text-muted: 111 102 89;
+  color-scheme: dark;
+}
+
 * {
   transition-duration: 200ms;
   transition-timing-function: ease;
 }
 
 body {
-  background: #0f0e0b;
-  color: #f4efe6;
+  background:
+    radial-gradient(1100px 380px at 92% -8%, rgb(22 179 100 / 0.10) 0%, transparent 60%),
+    radial-gradient(900px 360px at -8% 0%, rgb(14 165 233 / 0.10) 0%, transparent 55%),
+    rgb(var(--grow-bg));
+  color: rgb(var(--grow-text));
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+.dark body {
+  background: rgb(var(--grow-bg));
 }
 
 /* Scrollbar */
@@ -20,14 +56,14 @@ body {
   width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0f0e0b;
+  background: rgb(var(--grow-bg));
 }
 ::-webkit-scrollbar-thumb {
-  background: #2b271e;
+  background: rgb(var(--grow-border));
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #463f31;
+  background: rgb(var(--grow-border-hover));
 }
 
 /* Remove transition from progress bar fill — handled by animation */
