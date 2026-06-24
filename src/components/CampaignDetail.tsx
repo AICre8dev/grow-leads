@@ -17,11 +17,21 @@ export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoad
 
   // Only show contactable businesses — those with a phone number.
   const contactableLeads = campaign.leads.filter((lead) => lead.phone && lead.phone.trim() !== '');
-  const leadsWithOpp = contactableLeads.map((lead) => ({
-    lead,
-    opp: getReviewOpportunity(lead),
-    web: getWebsiteOpportunity(lead),
-  }));
+  const leadsWithOpp = contactableLeads.map((lead) => {
+    const opp = getReviewOpportunity(lead);
+    const web = getWebsiteOpportunity(lead);
+    // The single best thing to sell this lead.
+    const pitch = !web.hasSite
+      ? { label: '🌐 Build a site', cls: 'from-red-500 to-orange-500 text-white' }
+      : web.isOpportunity && web.pitch === 'Rebuild + SEO'
+        ? { label: '🛠 Rebuild + SEO', cls: 'from-violet-600 to-fuchsia-500 text-white' }
+        : web.isOpportunity
+          ? { label: '🌐 Build a site', cls: 'from-red-500 to-orange-500 text-white' }
+          : opp.isOpportunity
+            ? { label: '⭐ Review Boost', cls: 'from-amber-400 to-yellow-400 text-amber-950' }
+            : null;
+    return { lead, opp, web, pitch };
+  });
   const reviewOppCount = leadsWithOpp.filter((x) => x.opp.isOpportunity).length;
   const displayedLeads = reviewOppOnly ? leadsWithOpp.filter((x) => x.opp.isOpportunity) : leadsWithOpp;
 
@@ -151,13 +161,25 @@ export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoad
 
         {/* Table Rows */}
         {campaign.leads.length === 0 ? (
+          <div className="px-5 py-14 text-center">
+            {campaign.status === 'running' ? (
+              <p className="text-grow-text-secondary text-sm">⏳ Searching… leads will appear here in a few seconds.</p>
+            ) : (
+              <div className="mx-auto max-w-md">
+                <div className="text-3xl mb-2">🔍</div>
+                <p className="text-grow-text text-sm font-semibold">No businesses found for that location.</p>
+                <p className="mt-1 text-grow-text-secondary text-sm">
+                  Try a <span className="font-medium text-grow-text">single city or area</span> — e.g. “Mayfair” or “Kensington, London”, not two places at once.
+                </p>
+              </div>
+            )}
+          </div>
+        ) : displayedLeads.length === 0 ? (
           <div className="px-5 py-12 text-center">
-            <p className="text-grow-text-secondary text-sm">
-              {campaign.status === 'running' ? 'Scrape running. Leads will appear here soon.' : 'No leads found for this campaign.'}
-            </p>
+            <p className="text-grow-text-secondary text-sm">No leads match this filter — turn off “Review opportunities only” to see all.</p>
           </div>
         ) : (
-          displayedLeads.map(({ lead, opp, web }, index) => (
+          displayedLeads.map(({ lead, opp, web, pitch }, index) => (
             <div
               key={lead.id}
               className="grid grid-cols-12 gap-4 px-5 py-3.5 border-b border-grow-border/50 hover:bg-white/[0.02] transition-colors items-center opacity-0 animate-fade-in-up"
@@ -180,7 +202,7 @@ export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoad
                   <span className="truncate text-sm text-grow-text">{lead.businessName}</span>
                   {getRankBand(lead) === 'striking' && (
                     <span className="flex-none rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-300">
-                      Striking distance
+                      🎯 Striking distance
                     </span>
                   )}
                 </div>
@@ -238,18 +260,25 @@ export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoad
               <div className="col-span-2">
                 <StatusPill status={lead.status} errorMessage={lead.errorMessage} />
               </div>
-              <div className="col-span-2 text-right">
+              <div className="col-span-2 flex flex-col items-end gap-1.5">
+                {pitch && (
+                  <button
+                    className={`inline-flex items-center gap-1 rounded-lg bg-gradient-to-r ${pitch.cls} px-3 py-1.5 text-xs font-bold shadow-sm hover:opacity-90 transition-opacity`}
+                  >
+                    {pitch.label}
+                  </button>
+                )}
                 {lead.previewUrl ? (
                   <a
                     href={lead.previewUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-grow-accent text-sm hover:text-grow-accent-hover transition-colors font-medium"
+                    className="inline-flex items-center gap-1.5 text-grow-accent text-xs hover:text-grow-accent-hover transition-colors font-medium"
                   >
                     Preview Site
                     <ExternalLink size={12} />
                   </a>
-                ) : (
+                ) : !pitch ? (
                   <span className="text-grow-text-muted text-sm">
                     {lead.status === 'failed' && /project limit|AICre8/i.test(lead.errorMessage || '')
                       ? 'Lead saved'
@@ -257,7 +286,7 @@ export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoad
                         ? 'Needs review'
                         : 'Result saved'}
                   </span>
-                )}
+                ) : null}
               </div>
             </div>
           ))
