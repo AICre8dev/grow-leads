@@ -82,7 +82,7 @@ export default function NewCampaignInline({
             <span className="text-grow-text">{availableCredits}</span> available credits
           </div>
           <div className="flex items-center gap-2 rounded-md border border-grow-border bg-grow-bg px-3 py-2 text-xs text-grow-text-secondary">
-            <span className="h-2 w-2 rounded-full bg-grow-accent shadow-[0_0_16px_rgba(255,122,26,0.8)]" />
+            <span className="h-2 w-2 rounded-full bg-grow-accent shadow-[0_0_16px_rgba(22,179,100,0.8)]" />
             Live pipeline
           </div>
         </div>
@@ -176,7 +176,7 @@ export default function NewCampaignInline({
         <button
           type="submit"
           disabled={isCreating}
-          className="w-full flex items-center justify-center gap-2 bg-grow-text hover:bg-[#fff8eb] text-grow-bg font-semibold text-sm py-3.5 rounded-md transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-grow-accent to-sky-500 hover:opacity-90 text-white font-semibold text-sm py-3.5 rounded-xl transition-opacity disabled:cursor-not-allowed disabled:opacity-60 shadow-[0_8px_22px_rgba(22,179,100,0.32)]"
         >
           {isCreating ? 'Starting Campaign...' : 'Find Leads & Build Sites'}
           {!isCreating && <ArrowRight size={16} />}

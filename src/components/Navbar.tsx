@@ -25,7 +25,7 @@ export default function Navbar({ currentPage, onNavigate }: NavbarProps) {
     <nav className="fixed top-0 left-0 right-0 z-50 h-16 bg-grow-bg/85 backdrop-blur-xl border-b border-grow-border flex items-center justify-between px-4 md:px-6">
       {/* Left: Logo */}
       <div className="flex items-center gap-3 cursor-pointer" onClick={() => onNavigate('dashboard')}>
-        <div className="w-8 h-8 bg-grow-text text-grow-bg rounded-[7px] flex items-center justify-center shadow-[0_0_0_1px_rgba(255,255,255,0.08)]">
+        <div className="w-8 h-8 bg-gradient-to-br from-grow-accent to-sky-500 text-white rounded-[9px] flex items-center justify-center shadow-[0_6px_16px_rgba(22,179,100,0.35)]">
           <AudioLines size={17} strokeWidth={2.4} />
         </div>
         <div className="hidden sm:block">
