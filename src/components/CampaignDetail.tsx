@@ -90,7 +90,7 @@ export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoad
               </p>
             </div>
             {buildBlockedCount > 0 && (
-              <span className="inline-flex rounded-md border border-amber-500/20 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-300">
+              <span className="inline-flex rounded-md border border-amber-500/30 bg-amber-500/15 px-3 py-1.5 text-xs font-medium text-amber-700 dark:text-amber-300">
                 {buildBlockedCount} preview builds blocked by AICre8 project limit
               </span>
             )}
@@ -122,17 +122,17 @@ export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoad
       {reviewOppCount > 0 && (
         <div className="mb-3 flex items-center justify-between px-1">
           <span className="text-xs text-grow-text-secondary">
-            <span className="font-semibold text-amber-300">{reviewOppCount}</span> of {foundCount} have a Google review opportunity
+            <span className="font-bold text-amber-600 dark:text-amber-300">{reviewOppCount}</span> of {foundCount} have a Google review opportunity
           </span>
           <button
             onClick={() => setReviewOppOnly((v) => !v)}
-            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
               reviewOppOnly
-                ? 'border-amber-500/40 bg-amber-500/10 text-amber-300'
+                ? 'border-amber-500/40 bg-amber-500/15 text-amber-700 dark:text-amber-300'
                 : 'border-grow-border text-grow-text-secondary hover:border-grow-border-hover'
             }`}
           >
-            <Star size={12} className={reviewOppOnly ? 'fill-amber-300' : ''} />
+            <Star size={12} className={reviewOppOnly ? 'fill-amber-500 text-amber-500' : ''} />
             {reviewOppOnly ? 'Showing review opportunities' : 'Review opportunities only'}
           </button>
         </div>
@@ -189,10 +189,10 @@ export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoad
                 <div className="flex items-center gap-2">
                   {typeof lead.mapRank === 'number' && (
                     <span
-                      className={`flex-none rounded px-1.5 py-0.5 text-[11px] font-semibold border ${
+                      className={`flex-none rounded-md px-2 py-0.5 text-[11px] font-bold border ${
                         getRankBand(lead) === 'striking'
-                          ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                          : 'bg-grow-surface text-grow-text-muted border-grow-border'
+                          ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm'
+                          : 'bg-grow-surface text-grow-text-secondary border-grow-border'
                       }`}
                       title={`Map-pack rank #${lead.mapRank}`}
                     >
@@ -201,7 +201,7 @@ export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoad
                   )}
                   <span className="truncate text-sm text-grow-text">{lead.businessName}</span>
                   {getRankBand(lead) === 'striking' && (
-                    <span className="flex-none rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-300">
+                    <span className="flex-none rounded-md border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
                       🎯 Striking distance
                     </span>
                   )}
@@ -224,12 +224,12 @@ export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoad
                   )}
                   {web.label && (
                     <span
-                      className={`flex-none rounded px-1.5 py-0.5 text-[10px] font-medium border ${
+                      className={`flex-none rounded px-1.5 py-0.5 text-[10px] font-semibold border ${
                         !web.hasSite
-                          ? 'border-red-500/40 bg-red-500/10 text-red-300'
+                          ? 'border-red-500/40 bg-red-500/15 text-red-700 dark:text-red-300'
                           : web.isOpportunity
-                            ? 'border-amber-500/40 bg-amber-500/10 text-amber-300'
-                            : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+                            ? 'border-amber-500/40 bg-amber-500/15 text-amber-700 dark:text-amber-300'
+                            : 'border-emerald-500/40 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
                       }`}
                       title={web.pitch ? `${web.label} — ${web.pitch}` : web.label}
                     >
@@ -245,10 +245,10 @@ export default function CampaignDetail({ campaign, onBack, onDownloadCsv, isLoad
                 )}
                 {opp.isOpportunity && (
                   <span
-                    className="mt-1.5 inline-flex items-center gap-1 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-300"
+                    className="mt-1.5 inline-flex items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:text-amber-300"
                     title={`Review opportunity: ${opp.reasons.join(', ')}`}
                   >
-                    <Star size={10} className="fill-amber-300" />
+                    <Star size={10} className="fill-amber-500 text-amber-500" />
                     {opp.pitch} · {opp.reasons.join(' · ')}
                   </span>
                 )}
