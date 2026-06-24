@@ -384,8 +384,14 @@ function CampaignListItem({ campaign, onClick, index }: { campaign: Campaign; on
         </p>
       </div>
       <div className="col-span-5 md:col-span-2 flex items-center">
-        <span className="text-sm text-grow-text">{foundCount}/{campaign.totalLeads}</span>
-        <span className="ml-1.5 text-xs text-grow-text-muted">found</span>
+        {foundCount === 0 && (campaign.status === 'running' || campaign.status === 'pending') ? (
+          <span className="text-sm text-grow-accent">⏳ Searching…</span>
+        ) : (
+          <>
+            <span className="text-sm text-grow-text">{foundCount}/{campaign.totalLeads}</span>
+            <span className="ml-1.5 text-xs text-grow-text-muted">found</span>
+          </>
+        )}
       </div>
       <div className="col-span-4 md:col-span-3 flex items-center">
         <div className="h-1.5 w-full max-w-[160px] overflow-hidden rounded-full bg-grow-border">
