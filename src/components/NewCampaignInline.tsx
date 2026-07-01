@@ -16,6 +16,7 @@ const NICHES = [
   'HVAC',
   'Landscapers',
   'Auto Repair',
+  'Mechanics',
   'Chiropractors',
   'Real Estate Agents',
   'Personal Trainers',
@@ -25,6 +26,8 @@ const NICHES = [
   'Locksmiths',
   'Painters',
 ];
+
+const OTHER_NICHE = '__other__';
 
 const defaultTemplate = `Hi {{business_name}},
 
@@ -43,6 +46,9 @@ export default function NewCampaignInline({
   credits,
 }: NewCampaignInlineProps) {
   const [niche, setNiche] = useState('');
+  const [customNiche, setCustomNiche] = useState('');
+  const isOther = niche === OTHER_NICHE;
+  const effectiveNiche = isOther ? customNiche.trim() : niche;
   const [city, setCity] = useState('');
   const [clientName, setClientName] = useState('');
   const [totalLeads, setTotalLeads] = useState(10);
@@ -50,10 +56,10 @@ export default function NewCampaignInline({
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!niche || !city.trim() || isCreating) return;
+    if (!effectiveNiche || !city.trim() || isCreating) return;
     const created = await onCreate({
       clientName: clientName.trim() || undefined,
-      niche,
+      niche: effectiveNiche,
       city: city.trim(),
       totalLeads,
       emailTemplate: defaultTemplate,
@@ -61,6 +67,7 @@ export default function NewCampaignInline({
     if (!created) return;
 
     setNiche('');
+    setCustomNiche('');
     setCity('');
     setClientName('');
     setTotalLeads(10);
@@ -119,6 +126,7 @@ export default function NewCampaignInline({
               {NICHES.map((n) => (
                 <option key={n} value={n}>{n}</option>
               ))}
+              <option value={OTHER_NICHE}>Other (type your own)…</option>
             </select>
             <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="text-grow-text-secondary">
@@ -126,6 +134,16 @@ export default function NewCampaignInline({
               </svg>
             </div>
           </div>
+          {isOther && (
+            <input
+              type="text"
+              value={customNiche}
+              onChange={(e) => setCustomNiche(e.target.value)}
+              placeholder="e.g. Mobile Mechanics, Tattoo Studios…"
+              autoFocus
+              className="w-full mt-2 bg-grow-bg border border-grow-border rounded-md px-4 py-3 text-sm text-grow-text placeholder-grow-text-muted focus:outline-none focus:border-grow-accent/60 focus:ring-1 focus:ring-grow-accent/20 transition-colors"
+            />
+          )}
         </div>
 
         <div>
