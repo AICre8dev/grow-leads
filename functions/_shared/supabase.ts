@@ -6,6 +6,7 @@ export interface Env {
   GROW_DEMO_USER_ID?: string;
   APIFY_TOKEN?: string;
   APIFY_API_TOKEN?: string;
+  APIFY_TWITTER_ACTOR?: string;
   RESEND_API_KEY?: string;
   RESEND_FROM_EMAIL?: string;
   AICRE8_API_KEY?: string;

@@ -25,7 +25,7 @@ import {
   Users,
 } from 'lucide-react';
 import { researchLeads as seedResearchLeads, researchPipeline, researchSources } from '../data/researchInbox';
-import { createResearchLead, CreateResearchLeadInput, listResearchLeads, updateResearchLead } from '../lib/api';
+import { createResearchLead, CreateResearchLeadInput, drainResearch, listResearchLeads, sourceInvestors, updateResearchLead } from '../lib/api';
 import { ResearchIntent, ResearchLead, ResearchSource, ResearchSourceSummary, ResearchStatus } from '../types';
 
 type ResearchMode = 'customers' | 'investors';
@@ -125,6 +125,7 @@ export default function ResearchInbox() {
   const [stagedBrief, setStagedBrief] = useState(modeConfigs.customers.defaultBrief);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSourcing, setIsSourcing] = useState(false);
   const [isUpdatingId, setIsUpdatingId] = useState<string | null>(null);
   const [syncMessage, setSyncMessage] = useState('Loading live research records...');
 
@@ -195,12 +196,65 @@ export default function ResearchInbox() {
     if (nextLead) setSelectedLeadId(nextLead.id);
   };
 
+  // Poll the drain endpoint until the X scrape finishes and investors land (or
+  // the run completes with no strong matches). X scrapes take ~30s-2min.
+  const pollForInvestors = async (baseline: number) => {
+    for (let attempt = 0; attempt < 15; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 8000));
+
+      let drained;
+      try {
+        drained = await drainResearch();
+      } catch {
+        /* transient — retry next tick */
+      }
+
+      try {
+        const live = await listResearchLeads();
+        const investorLeads = live.filter((lead) => lead.intent === 'investor');
+        if (investorLeads.length > baseline) {
+          setLeads(live);
+          setSelectedLeadId(investorLeads[0].id);
+          setSyncMessage(`Sourced ${investorLeads.length - baseline} investor${investorLeads.length - baseline === 1 ? '' : 's'} from X — ranked by thesis fit.`);
+          setIsSourcing(false);
+          return;
+        }
+      } catch {
+        /* keep polling */
+      }
+
+      const runsDone = drained && drained.runs.length > 0 && drained.runs.every((r) => r.status === 'done' || r.status === 'failed');
+      if (runsDone) {
+        setSyncMessage('Sourcing finished — no strong investor matches this round. Try widening the brief.');
+        setIsSourcing(false);
+        return;
+      }
+    }
+    setSyncMessage('Still sourcing on X — new investors will appear here as they are found.');
+    setIsSourcing(false);
+  };
+
   const handleStageBrief = async (event: FormEvent) => {
     event.preventDefault();
     const nextBrief = brief.trim() || mode.defaultBrief;
     setStagedBrief(nextBrief);
-    setIsSaving(true);
 
+    // Investor mode runs the live X sourcing engine instead of staging a note.
+    if (activeMode === 'investors') {
+      setIsSourcing(true);
+      setSyncMessage('Searching X for active investors matching your thesis…');
+      const baseline = leads.filter((lead) => lead.intent === 'investor').length;
+      try {
+        await sourceInvestors(nextBrief);
+        void pollForInvestors(baseline);
+      } catch (err) {
+        setSyncMessage(`Could not start sourcing: ${(err as Error).message || 'unknown error'}`);
+        setIsSourcing(false);
+      }
+      return;
+    }
+
+    setIsSaving(true);
     const draft = createLeadFromBrief(nextBrief, activeMode);
 
     try {
@@ -322,11 +376,17 @@ export default function ResearchInbox() {
             </p>
             <button
               type="submit"
-              disabled={isSaving}
-              className={`inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold ${mode.primaryActionClass}`}
+              disabled={isSaving || isSourcing}
+              className={`inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-70 ${mode.primaryActionClass}`}
             >
               <ClipboardList size={15} />
-              {isSaving ? 'Saving...' : mode.stageLabel}
+              {activeMode === 'investors'
+                ? isSourcing
+                  ? 'Sourcing on X…'
+                  : 'Find investors on X'
+                : isSaving
+                  ? 'Saving...'
+                  : mode.stageLabel}
             </button>
           </div>
         </form>

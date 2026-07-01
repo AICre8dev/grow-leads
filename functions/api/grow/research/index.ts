@@ -3,7 +3,7 @@ import { getSupabase, json, error } from '../../../_shared/supabase';
 import { getRequestUserId } from '../../../_shared/auth';
 
 const intents = ['investor', 'startup_customer', 'local_business', 'launch_listing', 'agency_partner'] as const;
-const sources = ['linkedin', 'crunchbase', 'product_hunt', 'launch_directory', 'google_maps', 'github', 'website', 'csv'] as const;
+const sources = ['linkedin', 'crunchbase', 'product_hunt', 'launch_directory', 'google_maps', 'github', 'website', 'csv', 'twitter'] as const;
 const statuses = ['found', 'qualified', 'hook_ready', 'contacted', 'clicked', 'replied', 'booked', 'blocked'] as const;
 const priorities = ['high', 'medium', 'low'] as const;
 

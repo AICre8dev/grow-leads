@@ -208,6 +208,31 @@ export async function createResearchLead(input: CreateResearchLeadInput): Promis
   return mapResearchLead(researchLead);
 }
 
+export interface SourceInvestorsResponse {
+  runId: string;
+  apifyRunId: string;
+  status: string;
+}
+
+export interface DrainResponse {
+  runs: Array<{ runId: string; status: string; found: number; qualified: number }>;
+  inserted: number;
+}
+
+// Kick off an X/Twitter investor sourcing run for the given fundraise brief.
+export async function sourceInvestors(brief: string): Promise<SourceInvestorsResponse> {
+  return fetchJson<SourceInvestorsResponse>('/api/grow/research/source-investors', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ brief }),
+  });
+}
+
+// Process any finished sourcing runs into ranked investor leads. Idempotent.
+export async function drainResearch(): Promise<DrainResponse> {
+  return fetchJson<DrainResponse>('/api/grow/research/drain', { method: 'POST' });
+}
+
 export async function updateResearchLead(id: string, input: UpdateResearchLeadInput): Promise<ResearchLead> {
   const { researchLead } = await fetchJson<ResearchMutationResponse>(`/api/grow/research/${id}`, {
     method: 'PATCH',

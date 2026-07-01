@@ -48,7 +48,8 @@ export type ResearchSource =
   | 'google_maps'
   | 'github'
   | 'website'
-  | 'csv';
+  | 'csv'
+  | 'twitter';
 
 export type ResearchStatus =
   | 'found'
