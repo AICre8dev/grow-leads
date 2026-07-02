@@ -155,6 +155,33 @@ function extractTweet(t: ApifyTweetRaw): { handle: string; author: ApifyTweetRaw
   return { handle, author: a, text, url: t.url || t.twitterUrl || `https://x.com/${handle}` };
 }
 
+// Bio phrases that signal someone actually invests. Used to prioritise real
+// candidates over high-follower noise (traders, commentators, content bots)
+// BEFORE spending LLM tokens on them.
+const INVESTOR_SIGNAL = /\b(angel|investor|investing|invests?|\bvc\b|venture|ventures|general partner|\bgp\b|\blp\b|syndicate|pre-?seed|seed fund|seed investor|backing founders|writing checks|portfolio|capital allocator|deploying capital|early-stage|angel investing)\b/gi;
+
+function signalScore(bio: string): number {
+  const hits = bio.match(INVESTOR_SIGNAL);
+  return hits ? new Set(hits.map((h) => h.toLowerCase())).size : 0;
+}
+
+// Pick the `max` most investor-looking authors: those whose bio shows investor
+// signal first (ranked by signal strength then reach), topped up with the rest
+// by reach only if we still have room. Far better yield than sort-by-followers.
+export function selectInvestorCandidates(authors: SourcedAuthor[], max: number): SourcedAuthor[] {
+  const scored = authors.map((a) => ({ a, s: signalScore(a.bio) }));
+  const strong = scored
+    .filter((x) => x.s > 0)
+    .sort((x, y) => y.s - x.s || y.a.followers - x.a.followers)
+    .map((x) => x.a);
+  if (strong.length >= max) return strong.slice(0, max);
+  const rest = scored
+    .filter((x) => x.s === 0)
+    .sort((x, y) => y.a.followers - x.a.followers)
+    .map((x) => x.a);
+  return [...strong, ...rest].slice(0, max);
+}
+
 // Collapse many tweets down to one entry per author, carrying their bio and up
 // to `maxTweets` example posts — the raw material the LLM classifier scores.
 export function groupByAuthor(raw: ApifyTweetRaw[], maxTweets = 4): SourcedAuthor[] {

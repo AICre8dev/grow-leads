@@ -1,7 +1,7 @@
 import type { Env } from '../../../_shared/supabase';
 import { getSupabase, json, error, getApifyToken, getAicre8ApiUrl } from '../../../_shared/supabase';
 import { getRequestUserId } from '../../../_shared/auth';
-import { getRun, getTweetDataset, groupByAuthor, type SourcedAuthor } from '../../../_shared/apify';
+import { getRun, getTweetDataset, groupByAuthor, selectInvestorCandidates, type SourcedAuthor } from '../../../_shared/apify';
 
 // POST /api/grow/research/drain
 // For the caller's in-flight X sourcing runs: check the Apify run, and once it
@@ -95,7 +95,7 @@ export const onRequest: PagesFunction<Env> = async ({ request, env }) => {
     let authors: SourcedAuthor[] = [];
     try {
       const raw = await getTweetDataset(apifyToken, run.apify_dataset_id || apRun.defaultDatasetId);
-      authors = groupByAuthor(raw).sort((a, b) => b.followers - a.followers).slice(0, MAX_AUTHORS);
+      authors = selectInvestorCandidates(groupByAuthor(raw), MAX_AUTHORS);
     } catch (e) {
       await supabase.from('grow_research_runs').update({ status: 'failed', error: `dataset: ${(e as Error).message}` }).eq('id', run.id);
       summary.push({ runId: run.id, status: 'failed', found: 0, qualified: 0 });
